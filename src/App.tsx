@@ -1,26 +1,1552 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from 'react';
+import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
 
-function App() {
+// Types and Interfaces
+interface User {
+  email: string;
+  password: string;
+  name: string;
+  isAdmin: boolean;
+  joinDate: Date;
+  status: 'active' | 'inactive';
+  title?: string;
+  expertise?: string[];
+  bio?: string;
+  answersCount?: number;
+  rating?: number;
+  responseTime?: string;
+  avatar?: string;
+  points: number;
+}
+
+interface Answer {
+  id: number;
+  type: 'text' | 'video' | 'audio';
+  content: string;
+  author: string;
+  isAdmin: boolean;
+  timestamp: Date;
+}
+
+interface Question {
+  id: number;
+  text: string;
+  description?: string;
+  author: string;
+  authorEmail: string;
+  role: string;
+  tags: string[];
+  upvotes: number;
+  upvotedBy: string[];
+  savedBy: string[];
+  status: 'pending' | 'answered';
+  priority: 'low' | 'medium' | 'high';
+  views: number;
+  assignedTo?: string;
+  answers: Answer[];
+  timestamp: Date;
+}
+
+interface Notification {
+  id: number;
+  type: 'answer' | 'question' | 'upvote';
+  title: string;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+  icon: React.ComponentType<any>;
+  color: string;
+}
+
+interface NewAnswer {
+  type: 'text' | 'video' | 'audio';
+  content: string;
+}
+
+interface QuestionData {
+  text: string;
+  description?: string;
+  tags: string[];
+}
+
+type ViewMode = 'trending' | 'recent' | 'unanswered';
+type AuthMode = 'signin' | 'signup';
+type AdminView = 'dashboard' | 'questions' | 'users';
+
+const App: React.FC = () => {
+  // Initialize users with defaults
+  const getInitialUsers = (): User[] => {
+    return [
+      { 
+        email: 'admin@leaderlink.com', 
+        password: 'admin123', 
+        name: 'Stacey Santos', 
+        isAdmin: true, 
+        joinDate: new Date('2025-01-01'), 
+        status: 'active',
+        title: 'Frontier',
+        expertise: ['Sales Strategy', 'Team Management', 'Enterprise Sales'],
+        bio: 'Over 20 years of experience building and scaling high-performance sales teams.',
+        answersCount: 156,
+        rating: 4.9,
+        responseTime: '< 2 hours',
+        avatar: 'SS',
+        points: 15600
+      },
+      { 
+        email: 'sarah.expert@leaderlink.com', 
+        password: 'expert123', 
+        name: 'Richard Anderson', 
+        isAdmin: true, 
+        joinDate: new Date('2025-01-15'), 
+        status: 'active',
+        title: 'Frontier',
+        expertise: ['Cold Calling', 'Objection Handling', 'Sales Training'],
+        bio: 'Certified sales trainer with 15+ years helping teams exceed quotas.',
+        answersCount: 89,
+        rating: 4.8,
+        responseTime: '< 4 hours',
+        avatar: 'RA',
+        points: 8900
+      },
+      { 
+        email: 'demo@example.com', 
+        password: 'demo123', 
+        name: 'Demo User', 
+        isAdmin: false, 
+        joinDate: new Date('2025-03-15'), 
+        status: 'active',
+        points: 450
+      }
+    ];
+  };
+
+  // Initialize questions
+  const getInitialQuestions = (): Question[] => {
+    return [
+      {
+        id: 1,
+        text: "How do you keep the sales team motivated?",
+        description: "Our sales team has been struggling with morale lately. What are some proven strategies to boost motivation and maintain high energy levels throughout the quarter?",
+        author: "Mary Johnson",
+        authorEmail: "mary@company.com",
+        role: "Owner",
+        tags: ["Team Management", "Sales"],
+        upvotes: 42,
+        upvotedBy: [],
+        savedBy: [],
+        status: "answered",
+        priority: "high",
+        views: 234,
+        answers: [
+          {
+            id: 1,
+            type: "text",
+            content: "Regular recognition programs and clear goal setting have been key for us. We celebrate small wins weekly and have quarterly team events.",
+            author: "Stacey Santos",
+            isAdmin: true,
+            timestamp: new Date('2025-05-28')
+          }
+        ],
+        timestamp: new Date('2025-05-25')
+      },
+      {
+        id: 2,
+        text: "What's the best way to handle price objections?",
+        description: "I keep losing deals when prospects say we're too expensive. How can I better communicate value and overcome price objections without immediately offering discounts?",
+        author: "James Smith",
+        authorEmail: "james@business.com",
+        role: "Senior Partner",
+        tags: ["Objections", "Sales"],
+        upvotes: 38,
+        upvotedBy: [],
+        savedBy: [],
+        status: "pending",
+        priority: "medium",
+        views: 189,
+        answers: [],
+        timestamp: new Date('2025-05-26')
+      },
+      {
+        id: 3,
+        text: "Any tips for improving cold calling skills?",
+        description: "I'm new to sales and struggling with cold calls. Looking for practical tips and scripts that actually work in today's market.",
+        author: "Sarah Martinez",
+        authorEmail: "sarah@startup.com",
+        role: "President",
+        tags: ["Sales", "Skills"],
+        upvotes: 29,
+        upvotedBy: [],
+        savedBy: [],
+        status: "pending",
+        priority: "low",
+        views: 145,
+        answers: [],
+        timestamp: new Date('2025-05-27')
+      },
+      {
+        id: 4,
+        text: "How to structure compensation plans for sales teams?",
+        description: "We're redesigning our sales compensation structure. What are the best practices for creating a plan that drives performance while maintaining team cohesion?",
+        author: "Michael Chen",
+        authorEmail: "michael@techcorp.com",
+        role: "CEO",
+        tags: ["Team Management", "Sales"],
+        upvotes: 56,
+        upvotedBy: [],
+        savedBy: [],
+        status: "answered",
+        priority: "high",
+        views: 412,
+        answers: [
+          {
+            id: 1,
+            type: "text",
+            content: "A balanced approach works best: 60% base, 30% individual commission, 10% team bonus. This ensures stability while incentivizing both personal and team performance.",
+            author: "Richard Anderson",
+            isAdmin: true,
+            timestamp: new Date('2025-05-27')
+          }
+        ],
+        timestamp: new Date('2025-05-24')
+      },
+      {
+        id: 5,
+        text: "What metrics should we track for sales performance?",
+        description: "Beyond just revenue, what KPIs should we monitor to ensure our sales team is performing optimally and identify areas for improvement?",
+        author: "Lisa Wang",
+        authorEmail: "lisa@enterprise.com",
+        role: "VP Sales",
+        tags: ["Sales", "Leadership"],
+        upvotes: 47,
+        upvotedBy: [],
+        savedBy: [],
+        status: "answered",
+        priority: "medium",
+        views: 367,
+        answers: [
+          {
+            id: 1,
+            type: "text",
+            content: "Track activity metrics (calls, emails, meetings), pipeline velocity, conversion rates at each stage, average deal size, and customer acquisition cost. These provide a comprehensive view of performance.",
+            author: "Stacey Santos",
+            isAdmin: true,
+            timestamp: new Date('2025-05-26')
+          }
+        ],
+        timestamp: new Date('2025-05-23')
+      }
+    ];
+  };
+
+  // State with proper typing
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showAuthPage, setShowAuthPage] = useState<boolean>(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('signin');
+  const [isAdminView, setIsAdminView] = useState<boolean>(false);
+  const [showAskQuestion, setShowAskQuestion] = useState<boolean>(false);
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [showNotifications, setShowNotifications] = useState<boolean>(false);
+  const [showExperts, setShowExperts] = useState<boolean>(false);
+  const [selectedExpert, setSelectedExpert] = useState<User | null>(null);
+  const [showAskExpert, setShowAskExpert] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('trending');
+  
+  const [users, setUsers] = useState<User[]>(getInitialUsers());
+  const [questions, setQuestions] = useState<Question[]>(getInitialQuestions());
+  const [notifications, setNotifications] = useState<Notification[]>([
+    {
+      id: 1,
+      type: 'answer',
+      title: 'New answer to your question',
+      message: 'Admin answered your question',
+      timestamp: new Date(Date.now() - 1000 * 60 * 30),
+      read: false,
+      icon: MessageSquare,
+      color: 'text-blue-400'
+    }
+  ]);
+
+  const tags: string[] = ["Objections", "Recruiting", "Daily Routines", "Team Management", "Sales", "Skills", "Leadership"];
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedTag, setSelectedTag] = useState<string>('');
+  const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'text', content: '' });
+
+  // Functions with proper typing
+  const formatTimestamp = (date: Date): string => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  const handleLogout = (): void => {
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setIsAdminView(false);
+  };
+
+  const handleAskQuestion = (questionData: QuestionData): void => {
+    const newQuestion: Question = {
+      id: questions.length + 1,
+      text: questionData.text,
+      description: questionData.description || '',
+      author: currentUser?.name || 'Anonymous',
+      authorEmail: currentUser?.email || 'anonymous@example.com',
+      role: "Member",
+      tags: questionData.tags,
+      upvotes: 0,
+      upvotedBy: [],
+      savedBy: [],
+      status: "pending",
+      priority: "low",
+      views: 0,
+      answers: [],
+      timestamp: new Date()
+    };
+    setQuestions([newQuestion, ...questions]);
+    setShowAskQuestion(false);
+  };
+
+  const toggleUpvote = (questionId: number): void => {
+    if (!isAuthenticated) {
+      setShowAuthPage(true);
+      return;
+    }
+    
+    setQuestions(questions.map(q => {
+      if (q.id === questionId) {
+        const isUpvoted = q.upvotedBy.includes(currentUser!.email);
+        return {
+          ...q,
+          upvotedBy: isUpvoted 
+            ? q.upvotedBy.filter(email => email !== currentUser!.email)
+            : [...q.upvotedBy, currentUser!.email],
+          upvotes: isUpvoted ? q.upvotes - 1 : q.upvotes + 1
+        };
+      }
+      return q;
+    }));
+  };
+
+  const toggleSave = (questionId: number): void => {
+    if (!isAuthenticated) {
+      setShowAuthPage(true);
+      return;
+    }
+    
+    setQuestions(questions.map(q => {
+      if (q.id === questionId) {
+        const isSaved = q.savedBy.includes(currentUser!.email);
+        return {
+          ...q,
+          savedBy: isSaved 
+            ? q.savedBy.filter(email => email !== currentUser!.email)
+            : [...q.savedBy, currentUser!.email]
+        };
+      }
+      return q;
+    }));
+  };
+
+  const handleAddAnswer = (): void => {
+    if (!selectedQuestion || !currentUser?.isAdmin || !newAnswer.content) return;
+    
+    const answer: Answer = {
+      id: selectedQuestion.answers.length + 1,
+      type: newAnswer.type,
+      content: newAnswer.content,
+      author: currentUser.name,
+      isAdmin: true,
+      timestamp: new Date()
+    };
+    
+    setQuestions(questions.map(q => 
+      q.id === selectedQuestion.id 
+        ? { ...q, answers: [...q.answers, answer], status: 'answered' as const }
+        : q
+    ));
+    
+    const updatedQuestion: Question = {
+      ...selectedQuestion,
+      answers: [...selectedQuestion.answers, answer],
+      status: 'answered'
+    };
+    
+    setSelectedQuestion(updatedQuestion);
+    setNewAnswer({ type: 'text', content: '' });
+  };
+
+  const filteredQuestions = questions.filter(q => {
+    const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         q.author.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTag = !selectedTag || q.tags.includes(selectedTag);
+    return matchesSearch && matchesTag;
+  }).sort((a, b) => {
+    if (viewMode === 'recent') {
+      return b.timestamp.getTime() - a.timestamp.getTime();
+    } else if (viewMode === 'unanswered') {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      return b.timestamp.getTime() - a.timestamp.getTime();
+    } else { // trending
+      if (b.upvotes !== a.upvotes) return b.upvotes - a.upvotes;
+      return b.timestamp.getTime() - a.timestamp.getTime();
+    }
+  });
+
+  // Auth Page Component
+  const AuthPage: React.FC = () => {
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [name, setName] = useState<string>('');
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
+
+    const handleSignIn = (): void => {
+      const user = users.find(u => u.email === email && u.password === password);
+      if (user) {
+        setIsAuthenticated(true);
+        setCurrentUser(user);
+        setShowAuthPage(false);
+        setError('');
+        
+        if (user.isAdmin) {
+          setIsAdminView(true);
+        }
+      } else {
+        setError('Invalid email or password');
+      }
+    };
+
+    const handleSignUp = (): void => {
+      if (!email || !password || !name) {
+        setError('Please fill in all fields');
+        return;
+      }
+      
+      if (users.find(u => u.email === email)) {
+        setError('Email already exists');
+        return;
+      }
+
+      const newUser: User = {
+        email,
+        password,
+        name,
+        isAdmin: false,
+        joinDate: new Date(),
+        status: 'active',
+        points: 0
+      };
+      
+      const updatedUsers = [...users, newUser];
+      setUsers(updatedUsers);
+      setIsAuthenticated(true);
+      setCurrentUser(newUser);
+      setShowAuthPage(false);
+      setError('');
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-800 to-purple-700 text-white flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-5xl font-bold mb-2">Lynk</h1>
+            <p className="text-white/70">The Business Leadership Knowledge Base</p>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl border border-white/20">
+            <div className="flex mb-8">
+              <button
+                onClick={() => {
+                  setAuthMode('signin');
+                  setError('');
+                }}
+                className={`flex-1 py-3 rounded-l-lg font-semibold transition ${
+                  authMode === 'signin' ? 'bg-white/20' : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  setAuthMode('signup');
+                  setError('');
+                }}
+                className={`flex-1 py-3 rounded-r-lg font-semibold transition ${
+                  authMode === 'signup' ? 'bg-white/20' : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                Sign Up
+              </button>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+                {error}
+              </div>
+            )}
+
+            {authMode === 'signup' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60"
+                />
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full p-3 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={authMode === 'signin' ? handleSignIn : handleSignUp}
+              className="w-full py-3 bg-white/20 rounded-lg font-semibold hover:bg-white/30 transition"
+            >
+              {authMode === 'signin' ? 'Sign In' : 'Create Account'}
+            </button>
+
+            {authMode === 'signin' && (
+              <div className="mt-6 text-center text-sm">
+                <p className="text-white/60">Demo credentials:</p>
+                <p className="text-white/80">admin@leaderlink.com / admin123 (Stacey Santos)</p>
+                <p className="text-white/80">sarah.expert@leaderlink.com / expert123 (Richard Anderson)</p>
+                <p className="text-white/80">demo@example.com / demo123</p>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setShowAuthPage(false)}
+            className="mt-6 w-full py-3 text-white/70 hover:text-white transition"
+          >
+            Continue as Guest
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Admin Panel Component
+  const AdminPanel: React.FC = () => {
+    const [adminView, setAdminView] = useState<AdminView>('dashboard');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'answered'>('all');
+    
+    const pendingQuestions = questions.filter(q => q.status === 'pending');
+    const answeredQuestions = questions.filter(q => q.status === 'answered');
+    const activeUsers = users.filter(u => !u.isAdmin);
+    
+    const getFilteredQuestions = (): Question[] => {
+      if (filterStatus === 'pending') return pendingQuestions;
+      if (filterStatus === 'answered') return answeredQuestions;
+      return questions;
+    };
+    
+    const DashboardView: React.FC = () => (
+      <>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div 
+            onClick={() => setAdminView('questions')}
+            className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-xl rounded-xl p-6 border border-blue-500/20 cursor-pointer hover:scale-105 transition-transform"
+          >
+            <MessageSquare className="w-8 h-8 text-blue-400 mb-4" />
+            <h3 className="text-3xl font-bold">{questions.length}</h3>
+            <p className="text-white/60">Total Questions</p>
+            <p className="text-sm text-blue-400 mt-2">Click to view all →</p>
+          </div>
+          
+          <div 
+            onClick={() => {
+              setAdminView('questions');
+              setFilterStatus('pending');
+            }}
+            className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 backdrop-blur-xl rounded-xl p-6 border border-orange-500/20 cursor-pointer hover:scale-105 transition-transform"
+          >
+            <Clock className="w-8 h-8 text-orange-400 mb-4" />
+            <h3 className="text-3xl font-bold">{pendingQuestions.length}</h3>
+            <p className="text-white/60">Pending Questions</p>
+            <p className="text-sm text-orange-400 mt-2">Click to view →</p>
+          </div>
+          
+          <div 
+            onClick={() => setAdminView('users')}
+            className="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-xl rounded-xl p-6 border border-green-500/20 cursor-pointer hover:scale-105 transition-transform"
+          >
+            <Users className="w-8 h-8 text-green-400 mb-4" />
+            <h3 className="text-3xl font-bold">{activeUsers.length}</h3>
+            <p className="text-white/60">Active Users</p>
+            <p className="text-sm text-green-400 mt-2">Click to manage →</p>
+          </div>
+          
+          <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
+            <BarChart3 className="w-8 h-8 text-purple-400 mb-4" />
+            <h3 className="text-3xl font-bold">{questions.reduce((acc, q) => acc + q.views, 0)}</h3>
+            <p className="text-white/60">Total Views</p>
+          </div>
+        </div>
+
+        <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+          <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+          <div className="space-y-4">
+            {questions.slice(0, 5).map(question => (
+              <div key={question.id} className="p-4 bg-white/5 rounded-lg flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold">{question.text}</h3>
+                  <p className="text-sm text-white/60 mt-1">
+                    {question.author} • {formatTimestamp(question.timestamp)}
+                  </p>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs ${
+                  question.status === 'answered' ? 'bg-green-500/20 text-green-300' :
+                  'bg-orange-500/20 text-orange-300'
+                }`}>
+                  {question.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </>
+    );
+    
+    const QuestionsView: React.FC = () => (
+      <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Question Management</h2>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setAdminView('dashboard')}
+              className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition"
+            >
+              ← Back to Dashboard
+            </button>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as 'all' | 'pending' | 'answered')}
+              className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+            >
+              <option value="all">All Questions</option>
+              <option value="pending">Pending Only</option>
+              <option value="answered">Answered Only</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          {getFilteredQuestions().map(question => (
+            <div key={question.id} className="p-4 bg-white/5 rounded-lg">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold">{question.text}</h3>
+                  <p className="text-sm text-white/60 mt-1">
+                    {question.author} • {formatTimestamp(question.timestamp)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedQuestion(question);
+                    setIsAdminView(false);
+                  }}
+                  className="px-3 py-1 bg-blue-500/20 rounded text-sm hover:bg-blue-500/30 transition"
+                >
+                  {question.status === 'answered' ? 'View' : 'Answer'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+    
+    const UsersView: React.FC = () => (
+      <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">User Management</h2>
+          <button
+            onClick={() => setAdminView('dashboard')}
+            className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition"
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-white/20">
+                <th className="text-left py-3 px-4">User</th>
+                <th className="text-left py-3 px-4">Joined</th>
+                <th className="text-left py-3 px-4">Points</th>
+                <th className="text-left py-3 px-4">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeUsers.map(user => (
+                <tr key={user.email} className="border-b border-white/10">
+                  <td className="py-3 px-4">
+                    <div>
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-sm text-white/60">{user.email}</p>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-sm">
+                    {user.joinDate.toLocaleDateString()}
+                  </td>
+                  <td className="py-3 px-4">
+                    {user.points || 0}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded-full text-xs">
+                      Active
+                    </span>
+                  </td>
+                  </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+        <header className="bg-black/20 backdrop-blur-xl border-b border-white/10">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Shield className="w-6 h-6 text-yellow-400" />
+                Admin Dashboard
+              </h1>
+              <nav className="flex gap-2">
+                <button
+                  onClick={() => setAdminView('dashboard')}
+                  className={`px-3 py-1 rounded-lg transition ${
+                    adminView === 'dashboard' ? 'bg-white/20' : 'hover:bg-white/10'
+                  }`}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => setAdminView('questions')}
+                  className={`px-3 py-1 rounded-lg transition ${
+                    adminView === 'questions' ? 'bg-white/20' : 'hover:bg-white/10'
+                  }`}
+                >
+                  Questions
+                </button>
+                <button
+                  onClick={() => setAdminView('users')}
+                  className={`px-3 py-1 rounded-lg transition ${
+                    adminView === 'users' ? 'bg-white/20' : 'hover:bg-white/10'
+                  }`}
+                >
+                  Users
+                </button>
+              </nav>
+            </div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setIsAdminView(false)}
+                className="px-3 py-1 bg-white/10 rounded-lg hover:bg-white/20 transition"
+              >
+                Switch to User View
+              </button>
+              <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-lg transition">
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {adminView === 'dashboard' && <DashboardView />}
+          {adminView === 'questions' && <QuestionsView />}
+          {adminView === 'users' && <UsersView />}
+        </div>
+      </div>
+    );
+  };
+
+  // Modals
+  const NotificationsModal = () => {
+    if (!showNotifications) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl max-w-md w-full border border-white/20">
+          <div className="p-6 border-b border-white/20 flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Notifications</h2>
+            <button onClick={() => setShowNotifications(false)} className="p-2 hover:bg-white/10 rounded-lg">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
+            {notifications.map(notification => {
+              const Icon = notification.icon;
+              return (
+                <div key={notification.id} className="flex gap-3">
+                  <div className={`p-2 bg-white/10 rounded-lg ${notification.color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">{notification.title}</h3>
+                    <p className="text-sm text-white/80">{notification.message}</p>
+                    <span className="text-xs text-white/60">{formatTimestamp(notification.timestamp)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const AskQuestionModal = () => {
+  const [questionText, setQuestionText] = useState('');
+  const [questionDescription, setQuestionDescription] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  if (!showAskQuestion) return null;
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-2xl w-full border border-white/20">
+          <h2 className="text-2xl font-bold mb-6">Ask a Question</h2>
+          <input
+            value={questionText}
+            onChange={(e) => setQuestionText(e.target.value)}
+            placeholder="What's your question?"
+            className="w-full p-4 mb-4 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60"
+          />
+          <textarea
+            value={questionDescription}
+            onChange={(e) => setQuestionDescription(e.target.value)}
+            placeholder="Provide more details (optional)"
+            className="w-full p-4 mb-6 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 min-h-[80px]"
+          />
+          <div className="mb-6">
+            <p className="text-sm mb-3 text-white/80">Select relevant tags:</p>
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => {
+                    setSelectedTags(selectedTags.includes(tag) 
+                      ? selectedTags.filter(t => t !== tag)
+                      : [...selectedTags, tag]
+                    );
+                  }}
+                  className={`px-4 py-2 rounded-full border transition ${
+                    selectedTags.includes(tag)
+                      ? 'bg-white/20 border-white/40'
+                      : 'bg-white/10 border-white/20 hover:bg-white/15'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                if (questionText && selectedTags.length > 0) {
+                  handleAskQuestion({ text: questionText, description: questionDescription, tags: selectedTags });
+                }
+              }}
+              disabled={!questionText || selectedTags.length === 0}
+              className="flex-1 py-3 bg-white/20 rounded-lg font-semibold hover:bg-white/30 transition disabled:opacity-50"
+            >
+              Post Question
+            </button>
+            <button onClick={() => setShowAskQuestion(false)} className="flex-1 py-3 bg-white/10 rounded-lg font-semibold hover:bg-white/20 transition">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const QuestionDetailModal = () => {
+    if (!selectedQuestion) return null;
+    
+    const question = questions.find(q => q.id === selectedQuestion.id) || selectedQuestion;
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-4xl w-full border border-white/20 my-8">
+          <div className="flex justify-between items-start mb-6">
+            <h2 className="text-3xl font-bold pr-4">{question.text}</h2>
+            <button onClick={() => setSelectedQuestion(null)} className="p-2 hover:bg-white/10 rounded-lg">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          
+          {question.description && (
+            <p className="text-white/80 mb-6">{question.description}</p>
+          )}
+          
+          <div className="flex items-center gap-4 mb-6 text-white/80">
+            <span>{question.author}, {question.role}</span>
+            <span>•</span>
+            <span>{question.timestamp.toLocaleDateString()}</span>
+          </div>
+          
+          <div className="flex gap-2 mb-8">
+            {question.tags.map(tag => (
+              <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-sm">
+                {tag}
+              </span>
+            ))}
+          </div>
+          
+          <div className="border-t border-white/20 pt-6">
+            <h3 className="text-xl font-semibold mb-4">Answers ({question.answers.length})</h3>
+            
+            {question.answers.map(answer => (
+              <div key={answer.id} className="mb-6 p-4 bg-white/5 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  {answer.isAdmin && <Shield className="w-4 h-4 text-yellow-400" />}
+                  <span className="font-semibold">{answer.author}</span>
+                  <span className="text-sm text-white/60">{answer.timestamp.toLocaleDateString()}</span>
+                </div>
+                <p className="text-white/90">{answer.content}</p>
+              </div>
+            ))}
+            
+            {currentUser?.isAdmin && (
+              <div className="mt-6 p-4 bg-white/5 rounded-lg">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-yellow-400" />
+                  Add Admin Answer
+                </h4>
+                <textarea
+                  value={newAnswer.content}
+                  onChange={(e) => setNewAnswer({ ...newAnswer, content: e.target.value })}
+                  placeholder="Type your answer..."
+                  className="w-full p-3 mb-4 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 min-h-[100px]"
+                />
+                <button
+                  onClick={handleAddAnswer}
+                  disabled={!newAnswer.content}
+                  className="w-full py-3 bg-white/20 rounded-lg font-semibold hover:bg-white/30 transition disabled:opacity-50"
+                >
+                  Post Answer
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const ExpertsModal = () => {
+    if (!showExperts) return null;
+    
+    const experts = users.filter(u => u.isAdmin);
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden border border-white/20">
+          <div className="p-6 border-b border-white/20">
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold">Meet Our Expert Advisors</h2>
+              <button onClick={() => setShowExperts(false)} className="p-2 hover:bg-white/10 rounded-lg transition">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {experts.map(expert => (
+                <div key={expert.email} className="bg-white/5 rounded-xl border border-white/10 p-6 hover:bg-white/10 transition">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="text-4xl bg-white/10 rounded-full w-16 h-16 flex items-center justify-center font-semibold">
+                      {expert.avatar || 'EX'}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold flex items-center gap-2">
+                        {expert.name}
+                        <Shield className="w-5 h-5 text-yellow-400" />
+                      </h3>
+                      <p className="text-white/80">{expert.title || 'Expert Advisor'}</p>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-white/60">
+                        <span className="flex items-center gap-1">
+                          <Star className="w-4 h-4" />
+                          {expert.rating || 5.0}
+                        </span>
+                        <span>{expert.responseTime || '< 24 hours'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <p className="text-white/80 mb-4">{expert.bio || 'Experienced professional ready to help.'}</p>
+                  
+                  {expert.expertise && (
+                    <div className="mb-4">
+                      <p className="text-sm text-white/60 mb-2">Areas of Expertise:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {expert.expertise.map(exp => (
+                          <span key={exp} className="px-3 py-1 bg-white/10 rounded-full text-sm">
+                            {exp}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setSelectedExpert(expert);
+                        setShowExperts(false);
+                      }}
+                      className="flex-1 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedExpert(expert);
+                        setShowAskExpert(true);
+                        setShowExperts(false);
+                      }}
+                      className="flex-1 py-2 bg-blue-500/20 rounded-lg hover:bg-blue-500/30 transition text-blue-300"
+                    >
+                      Ask Question
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const ExpertProfileModal = () => {
+    if (!selectedExpert || showAskExpert) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-white/20">
+          <div className="relative bg-gradient-to-br from-blue-500/20 to-purple-500/20 p-8 border-b border-white/20">
+            <button 
+              onClick={() => setSelectedExpert(null)} 
+              className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            
+            <div className="flex items-center gap-6">
+              <div className="text-6xl bg-white/10 rounded-full w-24 h-24 flex items-center justify-center font-semibold">
+                {selectedExpert.avatar || 'EX'}
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold flex items-center gap-3">
+                  {selectedExpert.name}
+                  <Shield className="w-6 h-6 text-yellow-400" />
+                </h2>
+                <p className="text-xl text-white/80 mt-1">{selectedExpert.title || 'Expert Advisor'}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            <button
+              onClick={() => setShowAskExpert(true)}
+              className="w-full py-3 bg-blue-500/20 rounded-lg hover:bg-blue-500/30 transition text-blue-300 font-semibold"
+            >
+              Ask {selectedExpert.name} a Question
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const AskExpertModal = () => {
+  const [questionText, setQuestionText] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  if (!showAskExpert || !selectedExpert) return null;
+  return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-2xl w-full border border-white/20">
+          <h2 className="text-2xl font-bold mb-2">Ask {selectedExpert.name}</h2>
+          <p className="text-white/70 mb-6">
+            {selectedExpert.title} • Responds in {selectedExpert.responseTime || '< 24 hours'}
+          </p>
+          
+          <textarea
+            value={questionText}
+            onChange={(e) => setQuestionText(e.target.value)}
+            placeholder={`What would you like to ask ${selectedExpert.name}?`}
+            className="w-full p-4 mb-6 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 min-h-[120px]"
+          />
+          
+          <div className="mb-6">
+            <p className="text-sm mb-3 text-white/80">Select relevant tags:</p>
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => {
+                    setSelectedTags(selectedTags.includes(tag) 
+                      ? selectedTags.filter(t => t !== tag)
+                      : [...selectedTags, tag]
+                    );
+                  }}
+                  className={`px-4 py-2 rounded-full border transition ${
+                    selectedTags.includes(tag)
+                      ? 'bg-white/20 border-white/40'
+                      : 'bg-white/10 border-white/20 hover:bg-white/15'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                if (questionText && selectedTags.length > 0) {
+                  const newQuestion = {
+                    id: questions.length + 1,
+                    text: questionText,
+                    author: currentUser?.name || 'Guest',
+                    authorEmail: currentUser?.email || 'guest@example.com',
+                    role: "Member",
+                    tags: selectedTags,
+                    upvotes: 0,
+                    upvotedBy: [],
+                    savedBy: [],
+                    status: "pending" as const,
+                    priority: "medium" as const,
+                    views: 0,
+                    assignedTo: selectedExpert.email,
+                    answers: [],
+                    timestamp: new Date()
+                  };
+                  
+                  setQuestions([newQuestion, ...questions]);
+                  setShowAskExpert(false);
+                  setSelectedExpert(null);
+                  alert(`Your question has been sent to ${selectedExpert.name}!`);
+                }
+              }}
+              disabled={!questionText || selectedTags.length === 0}
+              className="flex-1 py-3 bg-blue-500/20 rounded-lg font-semibold hover:bg-blue-500/30 transition disabled:opacity-50 text-blue-300"
+            >
+              Send Question
+            </button>
+            <button 
+              onClick={() => {
+                setShowAskExpert(false);
+                setSelectedExpert(null);
+              }} 
+              className="flex-1 py-3 bg-white/10 rounded-lg font-semibold hover:bg-white/20 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Show auth page
+  if (showAuthPage) {
+    return <AuthPage />;
+  }
+
+  // Show admin panel
+  if (isAuthenticated && currentUser?.isAdmin && isAdminView) {
+    return <AdminPanel />;
+  }
+
+  // Main app
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-800 to-purple-700 text-white">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Welcome section for new users */}
+        {!isAuthenticated && (
+          <div className="mb-12 p-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl border border-white/20 text-center">
+            <h2 className="text-2xl font-bold mb-4">Welcome to Lynk</h2>
+            <p className="text-lg text-white/80 mb-6 max-w-2xl mx-auto">
+              Build the ultimate knowledge base for sales and business leaders. Get expert insights from verified professionals.
+            </p>
+            <div className="flex gap-4 justify-center flex-wrap">
+              <div className="flex items-center gap-2 text-white/80">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <span>Knowledge Encyclopedia</span>
+              </div>
+              <div className="flex items-center gap-2 text-white/80">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <span>Expert-Driven Content</span>
+              </div>
+              <div className="flex items-center gap-2 text-white/80">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <span>Growing Question Library</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <header className="flex justify-between items-center mb-12">
+          <h1 className="text-4xl font-bold">Lynk</h1>
+          <div className="flex items-center gap-4">
+            {isAuthenticated ? (
+              <>
+                <div className="flex items-center gap-2">
+                  {currentUser && currentUser.isAdmin && (
+                    <button
+                      onClick={() => setIsAdminView(true)}
+                      className="px-3 py-1 bg-yellow-500/20 rounded-lg hover:bg-yellow-500/30 transition"
+                    >
+                      <LayoutDashboard className="w-4 h-4 inline mr-1" />
+                      Admin Panel
+                    </button>
+                  )}
+                  <User className="w-5 h-5" />
+                  <span>{currentUser?.name}</span>
+                </div>
+                <button onClick={() => setShowNotifications(true)} className="p-2 hover:bg-white/10 rounded-lg transition relative">
+                  <Bell className="w-5 h-5" />
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+                <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-lg transition">
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setShowAuthPage(true)} className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition">
+                <LogIn className="w-5 h-5 inline mr-2" />
+                Login
+              </button>
+            )}
+          </div>
+        </header>
+
+        <section className="text-center mb-16">
+          <div className="relative max-w-2xl mx-auto mb-8">
+            <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-6 h-6 text-white/60" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search our knowledge base..."
+              className="w-full py-6 pl-16 pr-6 text-xl bg-white/10 backdrop-blur-md rounded-full border-2 border-white/20 focus:border-white/40 outline-none transition placeholder-white/60"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-6 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          
+          <div className="flex gap-4 justify-center flex-wrap mb-6">
+            <button
+              onClick={() => setSelectedTag('')}
+              className={`px-6 py-3 rounded-full border-2 transition ${
+                !selectedTag ? 'bg-white/20 border-white/40' : 'bg-white/10 border-white/20 hover:bg-white/15'
+              }`}
+            >
+              All Topics
+            </button>
+            {tags.slice(0, 3).map(tag => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag(tag)}
+                className={`px-6 py-3 rounded-full border-2 transition ${
+                  selectedTag === tag ? 'bg-white/20 border-white/40' : 'bg-white/10 border-white/20 hover:bg-white/15'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+            <button
+              onClick={() => {
+                // Cycle through all tags
+                const currentIndex = tags.indexOf(selectedTag);
+                const nextIndex = (currentIndex + 1) % tags.length;
+                setSelectedTag(currentIndex === -1 ? tags[0] : tags[nextIndex]);
+              }}
+              className="px-6 py-3 rounded-full border-2 bg-white/10 border-white/20 hover:bg-white/15 transition flex items-center gap-2"
+              title="More topics"
+            >
+              More
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="flex justify-center gap-4 flex-wrap">
+            <button
+              onClick={() => setShowExperts(true)}
+              className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full border-2 border-white/20 hover:border-white/40 transition group"
+            >
+              <Shield className="w-5 h-5 text-yellow-400" />
+              <span className="font-semibold">Meet Our Expert Advisors</span>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
+            </button>
+            
+            {!isAuthenticated && (
+              <button
+                onClick={() => setShowAuthPage(true)}
+                className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-full border-2 border-white/20 hover:border-white/40 transition group"
+              >
+                <Star className="w-5 h-5 text-yellow-400" />
+                <span className="font-semibold">Contribute to Our Knowledge Base</span>
+              </button>
+            )}
+          </div>
+        </section>
+
+        <section>
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-3xl font-bold mb-2">
+                {viewMode === 'trending' && 'Trending Questions'}
+                {viewMode === 'recent' && 'Recent Questions'}
+                {viewMode === 'unanswered' && 'Unanswered Questions'}
+              </h2>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setViewMode('trending')}
+                  className={`text-sm ${viewMode === 'trending' ? 'text-white' : 'text-white/60 hover:text-white'} transition`}
+                >
+                  Trending
+                </button>
+                <button
+                  onClick={() => setViewMode('recent')}
+                  className={`text-sm ${viewMode === 'recent' ? 'text-white' : 'text-white/60 hover:text-white'} transition`}
+                >
+                  Recent
+                </button>
+                <button
+                  onClick={() => setViewMode('unanswered')}
+                  className={`text-sm ${viewMode === 'unanswered' ? 'text-white' : 'text-white/60 hover:text-white'} transition`}
+                >
+                  Unanswered ({questions.filter(q => q.status === 'pending').length})
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => isAuthenticated ? setShowAskQuestion(true) : setShowAuthPage(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border-2 border-white/20 hover:bg-white/20 hover:border-white/40 transition"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Ask a New Question</span>
+              <span className="sm:hidden">Ask</span>
+            </button>
+          </div>
+
+          {filteredQuestions.length === 0 ? (
+            <div className="text-center py-16">
+              <HelpCircle className="w-16 h-16 text-white/30 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No questions found</h3>
+              <p className="text-white/60 mb-6">Be the first to ask about this topic!</p>
+              <button
+                onClick={() => isAuthenticated ? setShowAskQuestion(true) : setShowAuthPage(true)}
+                className="px-6 py-3 bg-blue-500/20 rounded-lg hover:bg-blue-500/30 transition"
+              >
+                Ask the First Question
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {filteredQuestions.map((question, index) => (
+                <div
+                  key={question.id}
+                  className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/10 transition cursor-pointer group relative overflow-hidden"
+                  onClick={() => setSelectedQuestion(question)}
+                >
+                  {/* Hot indicator for trending questions */}
+                  {question.upvotes > 30 && (
+                    <div className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-full text-xs font-semibold">
+                      HOT
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-semibold mb-3 group-hover:text-white/90 transition">
+                        {question.text}
+                      </h3>
+                      
+                      {/* Question preview */}
+                      {question.description && (
+                        <p className="text-white/60 mb-3 line-clamp-2">
+                          {question.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center gap-4 text-white/70">
+                        <span className="flex items-center gap-1">
+                          <User className="w-4 h-4" />
+                          {question.author}, {question.role}
+                        </span>
+                        <span>•</span>
+                        <span>{formatTimestamp(question.timestamp)}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Eye className="w-4 h-4" />
+                          {question.views} views
+                        </span>
+                        {question.status === 'answered' && (
+                          <>
+                            <span>•</span>
+                            <span className="text-green-400 flex items-center gap-1">
+                              <CheckCircle className="w-4 h-4" />
+                              Answered
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex gap-2 mt-4">
+                        {question.tags.map(tag => (
+                          <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-sm hover:bg-white/20 transition">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3 ml-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleUpvote(question.id);
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
+                          question.upvotedBy.includes(currentUser?.email ?? '') 
+                            ? 'bg-blue-500/30 text-blue-300 border border-blue-400/50 scale-105' 
+                            : 'bg-white/10 hover:bg-white/15 border border-white/10'
+                        }`}
+                      >
+                        <ThumbsUp className={`w-4 h-4 transition-transform duration-300 ${
+                          question.upvotedBy.includes(currentUser?.email ?? '') 
+                            ? 'fill-current scale-110' 
+                            : 'hover:scale-110'
+                        }`} />
+                        <span className="font-medium">{question.upvotes}</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSave(question.id);
+                        }}
+                        className={`p-2 rounded-lg transition-all duration-300 ${
+                          question.savedBy.includes(currentUser?.email ?? '') 
+                            ? 'bg-yellow-500/30 text-yellow-300 border border-yellow-400/50 scale-105' 
+                            : 'bg-white/10 hover:bg-white/15 border border-white/10'
+                        }`}
+                        title={question.savedBy.includes(currentUser?.email ?? '') ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        <Bookmark className={`w-4 h-4 transition-transform duration-300 ${
+                          question.savedBy.includes(currentUser?.email ?? '') 
+                            ? 'fill-current scale-110' 
+                            : 'hover:scale-110'
+                        }`} />
+                      </button>
+                    </div>
+                  </div>
+                  {question.answers.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
+                      <p className="text-sm text-white/60">
+                        {question.answers.length} answer{question.answers.length > 1 ? 's' : ''}
+                      </p>
+                      <p className="text-sm text-white/60">
+                        Click to view answers →
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Quick stats */}
+          {filteredQuestions.length > 0 && (
+            <div className="mt-12 p-6 bg-white/5 rounded-2xl border border-white/10 text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div>
+                  <div className="text-3xl font-bold text-blue-400">{questions.length}</div>
+                  <div className="text-white/60">Total Questions</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-green-400">
+                    {questions.filter(q => q.status === 'answered').length}
+                  </div>
+                  <div className="text-white/60">Expert Answers</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-purple-400">{users.filter(u => u.isAdmin).length}</div>
+                  <div className="text-white/60">Expert Advisors</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Modals */}
+      <AskQuestionModal />
+      <QuestionDetailModal />
+      <NotificationsModal />
+      <ExpertsModal />
+      <ExpertProfileModal />
+      <AskExpertModal />
     </div>
   );
-}
+};
 
 export default App;
