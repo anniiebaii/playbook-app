@@ -2,6 +2,18 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Install Node
+
+You can install node by running `brew install node` via [Homebrew](https://brew.sh).
+
+## Setup Dependencies 
+
+Install required dependencies by running `npm install`.
+
+## Run project
+
+Run the project by running, `npm start`.
+
 ## Available Scripts
 
 In the project directory, you can run:
