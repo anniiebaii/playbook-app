@@ -1,74 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
+import { Question, Answer, User, Notification, NewAnswer, QuestionData } from './lib/supabase';
+import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User as LucideUser, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
 
 // Types and Interfaces
-interface User {
-  email: string;
-  password: string;
-  name: string;
-  isAdmin: boolean;
-  joinDate: Date;
-  status: 'active' | 'inactive';
-  title?: string;
-  expertise?: string[];
-  bio?: string;
-  answersCount?: number;
-  rating?: number;
-  responseTime?: string;
-  avatar?: string;
-  points: number;
-}
-
-interface Answer {
-  id: number;
-  type: 'text' | 'video' | 'audio';
-  content: string;
-  author: string;
-  isAdmin: boolean;
-  timestamp: Date;
-}
-
-interface Question {
-  id: number;
-  text: string;
-  description?: string;
-  author: string;
-  authorEmail: string;
-  role: string;
-  tags: string[];
-  upvotes: number;
-  upvotedBy: string[];
-  savedBy: string[];
-  status: 'pending' | 'answered';
-  priority: 'low' | 'medium' | 'high';
-  views: number;
-  assignedTo?: string;
-  answers: Answer[];
-  timestamp: Date;
-}
-
-interface Notification {
-  id: number;
-  type: 'answer' | 'question' | 'upvote';
-  title: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  icon: React.ComponentType<any>;
-  color: string;
-}
-
-interface NewAnswer {
-  type: 'text' | 'video' | 'audio';
-  content: string;
-}
-
-interface QuestionData {
-  text: string;
-  description?: string;
-  tags: string[];
-}
-
 type ViewMode = 'trending' | 'recent' | 'unanswered';
 type AuthMode = 'signin' | 'signup';
 type AdminView = 'dashboard' | 'questions' | 'users';
@@ -1252,7 +1186,7 @@ const App: React.FC = () => {
                       Admin Panel
                     </button>
                   )}
-                  <User className="w-5 h-5" />
+                  <LucideUser className="w-5 h-5" />
                   <span>{currentUser?.name}</span>
                 </div>
                 <button onClick={() => setShowNotifications(true)} className="p-2 hover:bg-white/10 rounded-lg transition relative">
@@ -1432,7 +1366,7 @@ const App: React.FC = () => {
                       
                       <div className="flex items-center gap-4 text-white/70">
                         <span className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
+                          <LucideUser className="w-4 h-4" />
                           {question.author}, {question.role}
                         </span>
                         <span>•</span>
