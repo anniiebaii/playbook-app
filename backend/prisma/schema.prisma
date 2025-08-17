@@ -13,3 +13,165 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password      String
+  name          String
+  isAdmin       Boolean  @default(false)
+  status        UserStatus @default(ACTIVE)
+  title         String?
+  expertise     String[] // Array of strings for expertise areas
+  bio           String?
+  rating        Float?
+  responseTime  String?
+  avatar        String?
+  points        Int      @default(0)
+  
+  // Relationships
+  questions         Question[] @relation("QuestionAuthor")
+  answers           Answer[]   @relation("AnswerAuthor")
+  assignedQuestions Question[] @relation("AssignedQuestions")
+  notifications     Notification[]
+  
+  // Upvotes and Bookmarks
+  questionUpvotes   QuestionUpvote[]
+  questionBookmarks QuestionBookmark[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Question {
+  id          Int      @id @default(autoincrement())
+  text        String
+  description String?
+  role        String
+  tags        String[] // Array of tags
+  views       Int      @default(0)
+  status      QuestionStatus @default(PENDING)
+  priority    Priority @default(LOW)
+  
+  // Foreign Keys
+  author      User     @relation("QuestionAuthor", fields: [authorId], references: [id])
+  authorId    Int
+  assignedTo  User?    @relation("AssignedQuestions", fields: [assignedToId], references: [id])
+  assignedToId Int?
+  
+  // One-to-many relationships
+  answers     Answer[] @relation("QuestionAnswers")
+  
+  // Upvotes and Bookmarks
+  upvotes     QuestionUpvote[]
+  bookmarks   QuestionBookmark[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("questions")
+}
+
+model Answer {
+  id        Int        @id @default(autoincrement())
+  type      AnswerType @default(TEXT)
+  content   String
+  
+  // Foreign Keys
+  author    User       @relation("AnswerAuthor", fields: [authorId], references: [id])
+  authorId  Int
+  question  Question   @relation("QuestionAnswers", fields: [questionId], references: [id], onDelete: Cascade)
+  questionId Int
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("answers")
+}
+
+model QuestionUpvote {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId Int
+  
+  createdAt  DateTime @default(now())
+  
+  @@unique([userId, questionId]) // Prevent duplicate upvotes
+  @@map("question_upvotes")
+}
+
+
+model QuestionBookmark {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId Int
+  
+  createdAt  DateTime @default(now())
+  
+  @@unique([userId, questionId]) // Prevent duplicate bookmarks
+  @@map("question_bookmarks")
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  icon      String           // Store icon name as string
+  color     String
+  
+  // Foreign Key
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@map("notifications")
+}
+
+// Enums
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("user_status")
+}
+
+enum QuestionStatus {
+  PENDING
+  ANSWERED
+
+  @@map("question_status")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+
+  @@map("priority")
+}
+
+enum AnswerType {
+  TEXT
+  VIDEO
+  AUDIO
+
+  @@map("answer_type")
+}
+
+enum NotificationType {
+  ANSWER
+  QUESTION
+  UPVOTE
+
+  @@map("notification_type")
+}
