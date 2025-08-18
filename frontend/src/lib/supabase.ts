@@ -5,8 +5,9 @@ const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY!
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Types and Interfaces
+// Types and Interfaces for Supabase schema
 export interface User {
+  id: number;
   email: string;
   password: string;
   name: string;
@@ -36,19 +37,15 @@ export interface Question {
   id: number;
   text: string;
   description?: string;
-  author: string;
-  authorEmail: string;
   role: string;
   tags: string[];
-  upvotes: number;
-  upvotedBy: string[];
-  savedBy: string[];
-  status: 'pending' | 'answered';
-  priority: 'low' | 'medium' | 'high';
   views: number;
-  assignedTo?: string;
-  answers: Answer[];
-  timestamp: Date;
+  status: 'PENDING' | 'ANSWERED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  authorId: number;
+  assignedToId?: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Notification {
@@ -73,3 +70,32 @@ export interface QuestionData {
   tags: string[];
 }
 
+export interface QuestionUpvote {
+  id: number;
+  questionId: number;
+  userId: number;
+  createdAt: Date;
+} 
+
+export interface QuestionBookmark {
+  id: number;
+  questionId: number;
+  userId: number;
+  createdAt: Date;
+} 
+
+// Interfaces and Types for App logic
+
+// This interface extends Question to include relational data and computed fields for easier use within the application.
+export interface QuestionWithRelations extends Question {
+  author: User; // Relation, not always present
+ // authorEmail: User["email"]; // Relation, not always present
+  assignedTo?: User;
+  answers?: Answer[];
+  upvotes?: QuestionUpvote[];
+  bookmarks?: QuestionBookmark[];
+
+  // Computed fields
+  upvoteCount?: number;
+  bookmarkCount?: number;
+}
