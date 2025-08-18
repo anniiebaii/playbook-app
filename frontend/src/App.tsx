@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, QuestionData, QuestionUpvote, QuestionBookmark } from './lib/supabase';
 import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User as LucideUser, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
+import { api } from './lib/api';
+import { QuestionService } from './lib/questionService';
 
 // Types and Interfaces
 type ViewMode = 'trending' | 'recent' | 'unanswered';
@@ -71,9 +73,10 @@ const App: React.FC = () => {
 
   // Initialize questions
   const getInitialQuestions = (): QuestionWithRelations[] => {
+
     return [
       {
-        id: 1,
+        id: 9999,
         text: "How do you keep the sales team motivated?",
         description: "Our sales team has been struggling with morale lately. What are some proven strategies to boost motivation and maintain high energy levels throughout the quarter?",
         author: getInitialUsers()[0],
@@ -101,22 +104,36 @@ const App: React.FC = () => {
     ];
   };
 
+  // const getInitialQuestions = (): QuestionWithRelations[] => {
+  //   // Return an empty array initially; questions will be loaded asynchronously
+  //   return [];
+  // }
+
   // State with proper typing
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showAuthPage, setShowAuthPage] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [isAdminView, setIsAdminView] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('trending');
+
   const [showAskQuestion, setShowAskQuestion] = useState<boolean>(false);
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionWithRelations | null>(null);
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [showExperts, setShowExperts] = useState<boolean>(false);
   const [selectedExpert, setSelectedExpert] = useState<User | null>(null);
   const [showAskExpert, setShowAskExpert] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('trending');
+  const [questions, setQuestions] = useState<QuestionWithRelations[]>(getInitialQuestions());
+
+  useEffect(() => {
+    // Fetch questions asynchronously on mount
+    QuestionService.getQuestionsWithRelations().then((data) => {
+      console.log(data);
+      setQuestions(getInitialQuestions().concat(data));
+    });
+  }, []);
   
   const [users, setUsers] = useState<User[]>(getInitialUsers());
-  const [questions, setQuestions] = useState<QuestionWithRelations[]>(getInitialQuestions());
   const [upvotes, setUpvotes] = useState<QuestionUpvote[]>(getUpvotes());
   const [bookmarks, setBookmarks] = useState<QuestionBookmark[]>(getBookmarks());
 
@@ -142,6 +159,7 @@ const App: React.FC = () => {
   // Functions with proper typing
   const formatTimestamp = (date: Date): string => {
     const now = new Date();
+    console.log(date);
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
@@ -163,7 +181,7 @@ const App: React.FC = () => {
     const now = new Date();
     const newQuestion: QuestionWithRelations = {
       id: questions.length + 1,
-      text: questionData.text,
+      text: questionData.title,
       description: questionData.description || '',
       author: currentUser!,
       authorId: currentUser?.id || 0,
@@ -177,6 +195,8 @@ const App: React.FC = () => {
       createdAt: now,
       updatedAt: now
     };
+
+    QuestionService.createQuestion(questionData);
     setQuestions([newQuestion, ...questions]);
     setShowAskQuestion(false);
   };
@@ -291,13 +311,10 @@ const App: React.FC = () => {
   });
 
   const checkIfUserUpvoted = (question: QuestionWithRelations) : boolean => {
-    console.log(question.upvotes);
     return question.upvotes?.some(upvote => upvote.userId === currentUser?.id) ?? false;
   }
 
   const checkIfUserBookmarked = (question: QuestionWithRelations) : boolean => {
-        console.log(question.bookmarks);
-
     return question.bookmarks?.some(bookmark => bookmark.userId === currentUser?.id) ?? false;
   }
 
@@ -791,7 +808,7 @@ const App: React.FC = () => {
             <button
               onClick={() => {
                 if (questionText && selectedTags.length > 0) {
-                  handleAskQuestion({ text: questionText, description: questionDescription, tags: selectedTags });
+                  handleAskQuestion({ title: questionText, description: questionDescription, tags: selectedTags });
                 }
               }}
               disabled={!questionText || selectedTags.length === 0}
@@ -834,7 +851,7 @@ const App: React.FC = () => {
           </div>
           
           <div className="flex gap-2 mb-8">
-            {question.tags.map(tag => (
+            {(question.tags ?? []).map(tag => (
               <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-sm">
                 {tag}
               </span>
@@ -1355,11 +1372,11 @@ const App: React.FC = () => {
                         )}
                       </div>
                       <div className="flex gap-2 mt-4">
-                        {question.tags.map(tag => (
+                        {question.tags != null ? question.tags.map(tag => (
                           <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-sm hover:bg-white/20 transition">
                             {tag}
                           </span>
-                        ))}
+                        )): null }
                       </div>
                     </div>
                     <div className="flex flex-col gap-3 ml-4">
