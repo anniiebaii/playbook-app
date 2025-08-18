@@ -1,9 +1,29 @@
 import { createClient } from '@supabase/supabase-js'
 
+
+
+// Debug environment variables
+console.log('Environment variables debug:')
+console.log('NODE_ENV:', process.env.NODE_ENV)
+console.log('REACT_APP_SUPABASE_URL:', process.env.REACT_APP_SUPABASE_URL)
+console.log('REACT_APP_SUPABASE_ANON_KEY exists:', !!process.env.REACT_APP_SUPABASE_ANON_KEY)
+console.log('All REACT_APP_ vars:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP_')))
+
+// Check if Supabase is properly configured
+if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
+  console.error('❌ Missing Supabase environment variables!')
+  console.error('Required variables: REACT_APP_SUPABASE_URL, REACT_APP_SUPABASE_ANON_KEY')
+  console.error('Make sure your .env file is in the same directory as package.json')
+} else {
+  console.log('✅ Supabase environment variables found')
+}
+
+
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL!
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY!
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
 
 // Types and Interfaces for Supabase schema
 export interface User {
@@ -65,7 +85,7 @@ export interface NewAnswer {
 }
 
 export interface QuestionData {
-  text: string;
+  title: string;
   description?: string;
   tags: string[];
 }
