@@ -111,7 +111,7 @@ export class AnswerService {
             type: answerData.type,
             content: answerData.content || '',
             questionId: answerData.questionId,
-            authorId: 11, // TODO: replace with current user ID
+            authorId: answerData.authorId, // TODO: replace with current user ID
             }])
             .select(`
             *,

@@ -154,7 +154,7 @@ export class QuestionService {
             text: questionData.title,
             description: questionData.description || '',
             tags: questionData.tags || [],
-            authorId: 11, // TODO: replace with current user ID
+            authorId: questionData.authorId,
             role: "User" // TODO: replace with current user role
             }])
             .select(`

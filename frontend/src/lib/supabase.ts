@@ -90,6 +90,7 @@ export interface QuestionData {
   title: string;
   description?: string;
   tags: string[];
+  authorId: number;
 }
 
 export interface QuestionUpvote {
