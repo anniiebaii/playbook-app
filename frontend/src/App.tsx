@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, QuestionData, QuestionUpvote, QuestionBookmark } from './lib/supabase';
+import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations } from './lib/supabase';
 import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User as LucideUser, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
 import { api } from './lib/api';
 import { QuestionService } from './lib/questionService';
+import { AnswerService } from './lib/answerService';
+
 
 // Types and Interfaces
 type ViewMode = 'trending' | 'recent' | 'unanswered';
@@ -91,11 +93,14 @@ const App: React.FC = () => {
         answers: [
           {
             id: 1,
-            type: "text",
+            type: "TEXT",
             content: "Regular recognition programs and clear goal setting have been key for us. We celebrate small wins weekly and have quarterly team events.",
-            author: "Stacey Santos",
+            authorId: 11,
+            author: getInitialUsers()[0],
+            questionId: 9999,
             isAdmin: true,
-            timestamp: new Date('2025-05-28')
+            createdAt: new Date('2025-05-28'),
+            updatedAt: new Date('2025-05-28')
           }
         ],
         createdAt: new Date('2025-05-25'),
@@ -154,7 +159,7 @@ const App: React.FC = () => {
   const tags: string[] = ["Objections", "Recruiting", "Daily Routines", "Team Management", "Sales", "Skills", "Leadership"];
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
-  const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'text', content: '' });
+  const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'TEXT', content: '' });
 
   // Functions with proper typing
   const formatTimestamp = (date: Date): string => {
@@ -264,14 +269,27 @@ const App: React.FC = () => {
   const handleAddAnswer = (): void => {
     if (!selectedQuestion || !currentUser?.isAdmin || !newAnswer.content) return;
     
-    const answer: Answer = {
+    const answer: AnswerWithRelations = {
       id: (selectedQuestion.answers?.length ?? 0) + 1,
       type: newAnswer.type,
       content: newAnswer.content,
-      author: currentUser.name,
+      author: currentUser,
+      authorId: currentUser.id,
       isAdmin: true,
-      timestamp: new Date()
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      questionId: selectedQuestion.id
     };
+
+    const answerData: AnswerData = {
+      type: newAnswer.type,
+      content: newAnswer.content,
+      authorId: currentUser.id,
+      questionId: selectedQuestion.id,
+      isAdmin: true
+    };
+
+    AnswerService.createAnswer(answerData);
     
     setQuestions(questions.map(q => 
       q.id === selectedQuestion.id 
@@ -289,7 +307,7 @@ const App: React.FC = () => {
       answers: [...(selectedQuestion.answers ?? []), answer],
       status: 'ANSWERED'
     });
-    setNewAnswer({ type: 'text', content: '' });
+    setNewAnswer({ type: 'TEXT', content: '' });
   };
 
   const filteredQuestions = questions.filter(q => {
@@ -865,8 +883,8 @@ const App: React.FC = () => {
               <div key={answer.id} className="mb-6 p-4 bg-white/5 rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
                   {answer.isAdmin && <Shield className="w-4 h-4 text-yellow-400" />}
-                  <span className="font-semibold">{answer.author}</span>
-                  <span className="text-sm text-white/60">{answer.timestamp.toLocaleDateString()}</span>
+                  <span className="font-semibold">{answer.author.name}</span>
+                  <span className="text-sm text-white/60">{answer.createdAt.toLocaleDateString()}</span>
                 </div>
                 <p className="text-white/90">{answer.content}</p>
               </div>
