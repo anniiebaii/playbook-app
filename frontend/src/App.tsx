@@ -160,7 +160,7 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'TEXT', content: '' });
-
+  
   // Functions with proper typing
   const formatTimestamp = (date: Date): string => {
     const now = new Date();
@@ -182,7 +182,7 @@ const App: React.FC = () => {
     setIsAdminView(false);
   };
 
-  const handleAskQuestion = (questionData: QuestionData): void => {
+  const handleAskQuestion = async (questionData: QuestionData) => {
     const now = new Date();
     const newQuestion: QuestionWithRelations = {
       id: questions.length + 1,
@@ -201,7 +201,9 @@ const App: React.FC = () => {
       updatedAt: now
     };
 
-    QuestionService.createQuestion(questionData);
+    const insertedQuestion = await QuestionService.createQuestion(questionData);
+    // reconcile actual id with temp id
+    newQuestion.id = insertedQuestion.id;
     setQuestions([newQuestion, ...questions]);
     setShowAskQuestion(false);
   };
@@ -826,7 +828,7 @@ const App: React.FC = () => {
             <button
               onClick={() => {
                 if (questionText && selectedTags.length > 0) {
-                  handleAskQuestion({ title: questionText, description: questionDescription, tags: selectedTags });
+                  handleAskQuestion({ authorId: currentUser?.id || 0, title: questionText, description: questionDescription, tags: selectedTags });
                 }
               }}
               disabled={!questionText || selectedTags.length === 0}
