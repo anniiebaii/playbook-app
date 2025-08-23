@@ -46,11 +46,13 @@ export interface User {
 
 export interface Answer {
   id: number;
-  type: 'text' | 'video' | 'audio';
+  type: 'TEXT' | 'VIDEO' | 'AUDIO';
   content: string;
-  author: string;
+  authorId: number;
+  questionId: number;
   isAdmin: boolean;
-  timestamp: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Question {
@@ -60,7 +62,7 @@ export interface Question {
   role: string;
   tags: string[];
   views: number;
-  status: 'PENDING' | 'ANSWERED';
+  status: QuestionStatus;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   authorId: number;
   assignedToId?: number;
@@ -80,7 +82,7 @@ export interface Notification {
 }
 
 export interface NewAnswer {
-  type: 'text' | 'video' | 'audio';
+  type: AnswerType
   content: string;
 }
 
@@ -105,17 +107,44 @@ export interface QuestionBookmark {
 } 
 
 // Interfaces and Types for App logic
+export type QuestionStatus = 'PENDING' | 'ANSWERED';
+export type AnswerType = 'TEXT' | 'VIDEO' | 'AUDIO';
 
 // This interface extends Question to include relational data and computed fields for easier use within the application.
 export interface QuestionWithRelations extends Question {
   author: User; // Relation, not always present
  // authorEmail: User["email"]; // Relation, not always present
   assignedTo?: User;
-  answers?: Answer[];
+  answers?: AnswerWithRelations[];
   upvotes?: QuestionUpvote[];
   bookmarks?: QuestionBookmark[];
 
   // Computed fields
   upvoteCount?: number;
   bookmarkCount?: number;
+}
+
+export interface AnswerData {
+  type: AnswerType;
+  content: string;
+  authorId: number;
+  questionId: number;
+  isAdmin: boolean;
+}
+
+export interface UpdateAnswerInput {
+  type?: AnswerType;
+  content?: string;
+}
+
+export interface AnswerWithRelations extends Answer {
+  author: User
+}
+
+export interface GetAnswersFilters {
+  questionId?: number;
+  authorId?: number;
+  type?: AnswerType;
+  limit?: number;
+  offset?: number;
 }

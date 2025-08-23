@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { QuestionWithRelations, Question, User, Answer, QuestionUpvote, QuestionBookmark, QuestionData } from './supabase'
+import type { QuestionWithRelations, Question, User, Answer, QuestionUpvote, QuestionBookmark, QuestionData, AnswerWithRelations } from './supabase'
 
 export class QuestionService {
   
@@ -71,7 +71,10 @@ export class QuestionService {
           *,
           author:users!questions_authorId_fkey(*),
           assignedTo:users!questions_assignedToId_fkey(*),
-          answers(*),
+          answers(
+            *,
+            author:users!answers_authorId_fkey(*)
+        ),
           upvotes:question_upvotes(*),
           bookmarks:question_bookmarks(*)
         `)
@@ -102,6 +105,7 @@ export class QuestionService {
         query = query.range(options.offset, options.offset + (options.limit || 10) - 1)
       }
 
+    // Execute the actual query
       const { data: questions, error } = await query
 
       if (error) {
@@ -115,7 +119,14 @@ export class QuestionService {
         ...question,
         author: question.author,
         assignedTo: question.assignedTo || undefined,
-        answers: question.answers || [],
+
+         // Map over answers to format dates in each answer
+        answers: (question.answers || []).map((answer: AnswerWithRelations) => ({
+            ...answer,
+            // Convert date strings to Date objects
+            createdAt: new Date(answer.createdAt),
+            updatedAt: new Date(answer.updatedAt),
+        })),
         upvotes: question.upvotes || [],
         bookmarks: question.bookmarks || [],
 
