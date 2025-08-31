@@ -1,18 +1,41 @@
-# Getting Started with Create React App
+# Getting Started
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Install Homebrew (for macOS)
+Follow instruction to install on [Homebrew](https://brew.sh).
 
 ## Install Node
+On your terminal, run `brew install node`.
 
-You can install node by running `brew install node` via [Homebrew](https://brew.sh).
+## Clone Project Repository from Github
+Clone the project from Github using the provided command. This should prompt you for your Github username and password. 
+```
+git clone https://github.com/anniiebaii/leaderlink-app.git
+```
+Alternatively, to avoid typing in your username and password each time you run a `git` command, you can configure your SSH keys by following Github's [instructions](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
+
 
 ## Setup Dependencies 
-
-Install required dependencies by running `npm install`.
+1. Navigate into the project directory.
+```
+cd leaderlink-app
+```
+2,. Navigate into the frontend directory.
+```
+cd frontend
+```
+3. Install required node dependencies.
+```
+npm install
+```
 
 ## Run project
 
 Run the project by running, `npm start`.
+
+Your default browser should automatically open up. If not, you can manually open the App via "http://localhost:3000/" in your browser.
+
+# React App 
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
 
