@@ -18,15 +18,11 @@ Alternatively, to avoid typing in your username and password each time you run a
 
 
 ## Setup Dependencies 
-1. Navigate into the project directory.
+1. Navigate into the project's frontend directory.
 ```
-cd leaderlink-app
+cd leaderlink-app/frontend
 ```
-2,. Navigate into the frontend directory.
-```
-cd frontend
-```
-3. Install required node dependencies.
+2. Install required node dependencies.
 ```
 npm install
 ```
