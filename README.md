@@ -30,7 +30,10 @@ npm install
 
 ## Run project
 
-Run the project by running, `npm start`.
+Run the project by running
+```
+npm start
+```
 
 Your default browser should automatically open up. If not, you can manually open the App via "http://localhost:3000/" in your browser.
 
