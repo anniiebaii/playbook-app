@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations } from './lib/supabase';
+import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations, CreateUpvoteInput } from './lib/supabase';
 import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User as LucideUser, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
 import { api } from './lib/api';
 import { QuestionService } from './lib/questionService';
 import { AnswerService } from './lib/answerService';
+import { UpvoteService } from './lib/upvoteService';
+import { UserService } from './lib/userService';
+import { BookmarkService } from './lib/bookmarkService';
+
 
 
 // Types and Interfaces
@@ -141,7 +145,7 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>(getInitialUsers());
   const [upvotes, setUpvotes] = useState<QuestionUpvote[]>(getUpvotes());
   const [bookmarks, setBookmarks] = useState<QuestionBookmark[]>(getBookmarks());
-
+  const [lastVoteTime, setLastVoteTime] = useState(0);
 
   const [notifications, setNotifications] = useState<Notification[]>([
     {
@@ -160,7 +164,7 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'TEXT', content: '' });
-  
+
   // Functions with proper typing
   const formatTimestamp = (date: Date): string => {
     const now = new Date();
@@ -208,30 +212,58 @@ const App: React.FC = () => {
     setShowAskQuestion(false);
   };
 
-  const toggleUpvote = (questionId: number): void => {
+  const getQuestionById = (id: number): QuestionWithRelations | undefined => {
+    return questions.find(q => q.id === id);
+  }
+
+  const toggleUpvote = async (questionId: number) => {
     if (!isAuthenticated) {
       setShowAuthPage(true);
       return;
     }
+
+    const question = getQuestionById(questionId);
+
+    if (!question) {
+      console.error('Question not found with ID:', questionId);
+      return;
+    }
+    const now = new Date();
+
+    // Prevent votes from rapidly resorting in the UI.
+    setLastVoteTime(now.getTime());
+
+    let newUpvotes: QuestionUpvote[] = Array.isArray(question.upvotes) ? [...question.upvotes] : [];
+
+    const isUpvoted = checkIfUserUpvoted(questions.find(q => q.id === questionId)!);
+
+    let newUpvote: QuestionUpvote = {
+      id: newUpvotes.length > 0 ? Math.max(...newUpvotes.map(u => u.id)) + 1 : 1, // Temporary ID; will be replaced by DB ID
+      questionId: questionId,
+      userId: currentUser!.id,
+      createdAt: now,
+    }; 
+
+    if (isUpvoted) {
+      // Remove upvote
+      newUpvotes = newUpvotes.filter(upvote => upvote.userId !== currentUser!.id);
+
+      await UpvoteService.deleteByQuestionAndUser(questionId, currentUser!.id);
+
+    } else {
+      // Add upvote
+      const insertedUpvote = await UpvoteService.create(newUpvote);
+      newUpvote.id = insertedUpvote.id; // Get actual ID from DB and replace temporary ID
+      newUpvotes.push(newUpvote);
+    }
     
-    // TODO: implement upvote persistence logic with DB
+    // Update upvote states
     setQuestions(questions.map(q => {
       if (q.id === questionId) {
-        const isUpvoted = checkIfUserUpvoted(q);
-        let newUpvotes: QuestionUpvote[] = Array.isArray(q.upvotes) ? [...q.upvotes] : [];
-        if (isUpvoted) {
-          newUpvotes = newUpvotes.filter(upvote => upvote.userId !== currentUser!.id);
-        } else {
-          newUpvotes.push({
-            id: newUpvotes.length > 0 ? Math.max(...newUpvotes.map(u => u.id)) + 1 : 1, // TODO: get ID from sequence in DB
-            questionId: q.id,
-            userId: currentUser!.id,
-            createdAt: new Date()
-          });
-        }
         return {
           ...q,
-          upvotes: newUpvotes
+          upvotes: newUpvotes,
+          upvoteCount: newUpvotes.length
         };
       }
       return q;
@@ -311,13 +343,9 @@ const App: React.FC = () => {
     });
     setNewAnswer({ type: 'TEXT', content: '' });
   };
-
-  const filteredQuestions = questions.filter(q => {
-    const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         q.author.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = !selectedTag || q.tags.includes(selectedTag);
-    return matchesSearch && matchesTag;
-  }).sort((a, b) => {
+  
+  const sortQuestions = (questionsToSort: QuestionWithRelations[]): QuestionWithRelations[] => {
+     return [...questionsToSort].sort((a, b) => {
     if (viewMode === 'recent') {
       return b.createdAt.getTime() - a.createdAt.getTime();
     } else if (viewMode === 'unanswered') {
@@ -325,9 +353,31 @@ const App: React.FC = () => {
       if (a.status !== 'PENDING' && b.status === 'PENDING') return 1;
       return b.createdAt.getTime() - a.createdAt.getTime();
     } else { // trending
-      if (b.upvotes !== a.upvotes) return (b.upvoteCount ?? 0) - (a.upvoteCount ?? 0);
+      //Compare upvoteCount directly, not upvotes arrays
+      const aUpvoteCount = a.upvoteCount ?? a.upvotes?.length ?? 0;
+      const bUpvoteCount = b.upvoteCount ?? b.upvotes?.length ?? 0;
+      
+      if (bUpvoteCount !== aUpvoteCount) {
+        return bUpvoteCount - aUpvoteCount;
+      }
       return b.createdAt.getTime() - a.createdAt.getTime();
     }
+  })
+  }
+
+  // Only sort when loading data initially
+  useEffect(() => {
+    // When questions first load, sort them once
+    if (questions.length > 0) {
+      setQuestions(sortQuestions(questions));
+    }
+  }, [questions.length, viewMode]); // Only when data loads or view changes
+
+  const filteredQuestions = questions.filter(q => {
+    const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         q.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTag = !selectedTag || q.tags.includes(selectedTag);
+    return matchesSearch && matchesTag;
   });
 
   const checkIfUserUpvoted = (question: QuestionWithRelations) : boolean => {
