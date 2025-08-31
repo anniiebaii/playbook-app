@@ -4,7 +4,10 @@
 Follow instruction to install on [Homebrew](https://brew.sh).
 
 ## Install Node
-On your terminal, run `brew install node`.
+On your terminal, run 
+```
+brew install node
+```
 
 ## Clone Project Repository from Github
 Clone the project from Github using the provided command. This should prompt you for your Github username and password. 
