@@ -4,6 +4,18 @@ import type { User, Answer, AnswerWithRelations, AnswerData, QuestionStatus} fro
 
 export class AnswerService {
 
+    private static readonly ANSWER_WITH_RELATIONS_QUERY = `
+        *,
+        author:users!questions_authorId_fkey(*),
+        assignedTo:users!questions_assignedToId_fkey(*),
+        answers(
+        *,
+        author:users!answers_authorId_fkey(*)
+    ),
+        upvotes:question_upvotes!question_upvotes_questionId_fkey(*),
+        bookmarks:question_bookmarks!question_bookmarks_questionId_fkey(*)
+    `
+
   static async getAnswerWithRelations(answerId: number): Promise<AnswerWithRelations | null> {
     try {
       // Main question query with relations
@@ -31,6 +43,8 @@ export class AnswerService {
         createdAt: new Date(answer.createdAt),
         updatedAt: new Date(answer.updatedAt)
       }
+
+      console.log('Fetched answer with relations:', answerWithRelations)
 
       return answerWithRelations
 
@@ -95,6 +109,7 @@ export class AnswerService {
         updatedAt: new Date(answer.updatedAt),
       }))
 
+      console.log('Fetched answers with relations:', answerWithRelations)
       return answerWithRelations
 
     } catch (error) {
