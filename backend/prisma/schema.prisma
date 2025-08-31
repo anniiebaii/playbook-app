@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int                @id @default(autoincrement())
+  email             String             @unique
+  password          String
+  name              String
+  isAdmin           Boolean            @default(false)
+  status            UserStatus         @default(ACTIVE)
+  title             String?
+  expertise         String[]
+  bio               String?
+  rating            Float?
+  responseTime      String?
+  avatar            String?
+  points            Int                @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @default(now()) @updatedAt
+  answers           Answer[]           @relation("AnswerAuthor")
+  notifications     Notification[]
+  questionBookmarks QuestionBookmark[]
+  questionUpvotes   QuestionUpvote[]
+  assignedQuestions Question[]         @relation("AssignedQuestions")
+  questions         Question[]         @relation("QuestionAuthor")
+
+  @@map("users")
+}
+
+model Question {
+  id           Int                @id @default(autoincrement())
+  text         String
+  description  String?
+  role         String
+  tags         String[]
+  views        Int                @default(0)
+  status       QuestionStatus     @default(PENDING)
+  priority     Priority           @default(LOW)
+  authorId     Int
+  assignedToId Int?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @default(now()) @updatedAt
+  answers      Answer[]           @relation("QuestionAnswers")
+  bookmarks    QuestionBookmark[]
+  upvotes      QuestionUpvote[]
+  assignedTo   User?              @relation("AssignedQuestions", fields: [assignedToId], references: [id])
+  author       User               @relation("QuestionAuthor", fields: [authorId], references: [id])
+
+  @@map("questions")
+}
+
+model Answer {
+  id         Int        @id @default(autoincrement())
+  type       AnswerType @default(TEXT)
+  content    String
+  authorId   Int
+  questionId Int
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @default(now()) @updatedAt
+  author     User       @relation("AnswerAuthor", fields: [authorId], references: [id])
+  question   Question   @relation("QuestionAnswers", fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("answers")
+}
+
+model QuestionUpvote {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  questionId Int
+  createdAt  DateTime @default(now())
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@map("question_upvotes")
+}
+
+model QuestionBookmark {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  questionId Int
+  createdAt  DateTime @default(now())
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@map("question_bookmarks")
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  icon      String
+  color     String
+  userId    Int
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @default(now()) @updatedAt
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("user_status")
+}
+
+enum QuestionStatus {
+  PENDING
+  ANSWERED
+
+  @@map("question_status")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+
+  @@map("priority")
+}
+
+enum AnswerType {
+  TEXT
+  VIDEO
+  AUDIO
+
+  @@map("answer_type")
+}
+
+enum NotificationType {
+  ANSWER
+  QUESTION
+  UPVOTE
+
+  @@map("notification_type")
+}
