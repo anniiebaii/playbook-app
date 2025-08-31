@@ -7,6 +7,7 @@ import { AnswerService } from './lib/answerService';
 import { UpvoteService } from './lib/upvoteService';
 import { UserService } from './lib/userService';
 import { BookmarkService } from './lib/bookmarkService';
+import { get } from 'http';
 
 // Types and Interfaces
 type ViewMode = 'trending' | 'recent' | 'unanswered';
@@ -14,6 +15,7 @@ type AuthMode = 'signin' | 'signup';
 type AdminView = 'dashboard' | 'questions' | 'users';
 
 const App: React.FC = () => {
+  // TODO: implement real authentication and user management
   // Initialize users with defaults
   const getInitialUsers = (): User[] => {
     return [
@@ -75,48 +77,14 @@ const App: React.FC = () => {
   }
 
 
-  // Initialize questions
-  const getInitialQuestions = (): QuestionWithRelations[] => {
+  // Dummy questions
+  const getDummyQuestions = (): QuestionWithRelations[] => {
 
     return [
-      {
-        id: 9999,
-        text: "How do you keep the sales team motivated?",
-        description: "Our sales team has been struggling with morale lately. What are some proven strategies to boost motivation and maintain high energy levels throughout the quarter?",
-        author: getInitialUsers()[0],
-        authorId: getInitialUsers()[0].id, // Use a default User object for demo data
-        role: "Owner",
-        tags: ["Team Management", "Sales"],
-        upvotes: [],
-        bookmarks: [],
-        status: "ANSWERED",
-        priority: "HIGH",
-        views: 234,
-        answers: [
-          {
-            id: 1,
-            type: "TEXT",
-            content: "Regular recognition programs and clear goal setting have been key for us. We celebrate small wins weekly and have quarterly team events.",
-            authorId: 11,
-            author: getInitialUsers()[0],
-            questionId: 9999,
-            isAdmin: true,
-            createdAt: new Date('2025-05-28'),
-            updatedAt: new Date('2025-05-28')
-          }
-        ],
-        createdAt: new Date('2025-05-25'),
-        updatedAt: new Date('2025-05-28')
-      }
     ];
   };
 
-  // const getInitialQuestions = (): QuestionWithRelations[] => {
-  //   // Return an empty array initially; questions will be loaded asynchronously
-  //   return [];
-  // }
-
-  // State with proper typing
+  // React Hooks and States with proper typing
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showAuthPage, setShowAuthPage] = useState<boolean>(false);
@@ -124,27 +92,48 @@ const App: React.FC = () => {
   const [isAdminView, setIsAdminView] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>('trending');
 
-  const [showAskQuestion, setShowAskQuestion] = useState<boolean>(false);
-  const [selectedQuestion, setSelectedQuestion] = useState<QuestionWithRelations | null>(null);
-  const [showNotifications, setShowNotifications] = useState<boolean>(false);
-  const [showExperts, setShowExperts] = useState<boolean>(false);
-  const [selectedExpert, setSelectedExpert] = useState<User | null>(null);
-  const [showAskExpert, setShowAskExpert] = useState<boolean>(false);
-  const [questions, setQuestions] = useState<QuestionWithRelations[]>(getInitialQuestions());
-
-  useEffect(() => {
-    // Fetch questions asynchronously on mount
-    QuestionService.getQuestionsWithRelations().then((data) => {
-      console.log(data);
-      setQuestions(getInitialQuestions().concat(data));
-    });
-  }, []);
-  
+  /* App Object States */
   const [users, setUsers] = useState<User[]>(getInitialUsers());
   const [upvotes, setUpvotes] = useState<QuestionUpvote[]>(getUpvotes());
   const [bookmarks, setBookmarks] = useState<QuestionBookmark[]>(getBookmarks());
-  const [lastVoteTime, setLastVoteTime] = useState(0);
+  const [questions, setQuestions] = useState<QuestionWithRelations[]>(getDummyQuestions());
 
+  /* Question States */
+  const [showAskQuestion, setShowAskQuestion] = useState<boolean>(false);
+  const [selectedQuestion, setSelectedQuestion] = useState<QuestionWithRelations | null>(null);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
+
+  /* Answer States */
+  const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'TEXT', content: '' });
+
+  const [showNotifications, setShowNotifications] = useState<boolean>(false);
+
+  /* Expert User States */
+  const [showExperts, setShowExperts] = useState<boolean>(false);
+  const [selectedExpert, setSelectedExpert] = useState<User | null>(null);
+  const [showAskExpert, setShowAskExpert] = useState<boolean>(false);
+
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+     try {
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 seconds delay
+
+      const data = await QuestionService.getQuestionsWithRelations();
+      setQuestions(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingQuestions(false);
+    }
+    };
+    
+    fetchQuestions();
+  }, []);  
+
+
+  const [lastVoteTime, setLastVoteTime] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: 1,
@@ -161,7 +150,6 @@ const App: React.FC = () => {
   const tags: string[] = ["Objections", "Recruiting", "Daily Routines", "Team Management", "Sales", "Skills", "Leadership"];
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
-  const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'TEXT', content: '' });
 
   // Functions with proper typing
   const formatTimestamp = (date: Date): string => {
@@ -1217,6 +1205,15 @@ const App: React.FC = () => {
     );
   };
 
+  const LoadingQuestionsSpinner: React.FC = () => {
+  return (
+    <div className="flex flex-col justify-center items-center py-16">
+      <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+      <span className="text-white/80 text-lg font-medium">Loading questions...</span>
+    </div>
+  );
+};
+
   // Show auth page
   if (showAuthPage) {
     return <AuthPage />;
@@ -1408,7 +1405,8 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          {filteredQuestions.length === 0 ? (
+          { loadingQuestions ? <LoadingQuestionsSpinner/> : null }
+          { !loadingQuestions && filteredQuestions.length === 0 ? (
             <div className="text-center py-16">
               <HelpCircle className="w-16 h-16 text-white/30 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No questions found</h3>
