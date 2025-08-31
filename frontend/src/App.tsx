@@ -8,8 +8,6 @@ import { UpvoteService } from './lib/upvoteService';
 import { UserService } from './lib/userService';
 import { BookmarkService } from './lib/bookmarkService';
 
-
-
 // Types and Interfaces
 type ViewMode = 'trending' | 'recent' | 'unanswered';
 type AuthMode = 'signin' | 'signup';
@@ -212,6 +210,52 @@ const App: React.FC = () => {
     setShowAskQuestion(false);
   };
 
+    const handleAddAnswer = async () => {
+    if (!selectedQuestion || !currentUser?.isAdmin || !newAnswer.content) return;
+    
+    let answer: AnswerWithRelations = {
+      id: (selectedQuestion.answers?.length ?? 0) + 1,
+      type: newAnswer.type,
+      content: newAnswer.content,
+      author: currentUser,
+      authorId: currentUser.id,
+      isAdmin: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      questionId: selectedQuestion.id
+    };
+
+    const answerData: AnswerData = {
+      type: newAnswer.type,
+      content: newAnswer.content,
+      authorId: currentUser.id,
+      questionId: selectedQuestion.id,
+      isAdmin: true
+    };
+
+    const insertedAnswer = await AnswerService.createAnswer(answerData);
+
+    answer.id = insertedAnswer.id;
+    
+    setQuestions(questions.map(q => 
+      q.id === selectedQuestion.id 
+        ? { ...q, answers: [...(q.answers ?? []), answer], status: 'ANSWERED' as const }
+        : q
+    ));
+    
+    const updatedQuestion: Question = {
+      ...selectedQuestion,
+      status: 'ANSWERED'
+    };
+    
+    setSelectedQuestion({
+      ...selectedQuestion,
+      answers: [...(selectedQuestion.answers ?? []), answer],
+      status: 'ANSWERED'
+    });
+    setNewAnswer({ type: 'TEXT', content: '' });
+  };
+
   const getQuestionById = (id: number): QuestionWithRelations | undefined => {
     return questions.find(q => q.id === id);
   }
@@ -316,50 +360,6 @@ const App: React.FC = () => {
       }
       return q;
     }));
-  };
-
-  const handleAddAnswer = (): void => {
-    if (!selectedQuestion || !currentUser?.isAdmin || !newAnswer.content) return;
-    
-    const answer: AnswerWithRelations = {
-      id: (selectedQuestion.answers?.length ?? 0) + 1,
-      type: newAnswer.type,
-      content: newAnswer.content,
-      author: currentUser,
-      authorId: currentUser.id,
-      isAdmin: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      questionId: selectedQuestion.id
-    };
-
-    const answerData: AnswerData = {
-      type: newAnswer.type,
-      content: newAnswer.content,
-      authorId: currentUser.id,
-      questionId: selectedQuestion.id,
-      isAdmin: true
-    };
-
-    AnswerService.createAnswer(answerData);
-    
-    setQuestions(questions.map(q => 
-      q.id === selectedQuestion.id 
-        ? { ...q, answers: [...(q.answers ?? []), answer], status: 'ANSWERED' as const }
-        : q
-    ));
-    
-    const updatedQuestion: Question = {
-      ...selectedQuestion,
-      status: 'ANSWERED'
-    };
-    
-    setSelectedQuestion({
-      ...selectedQuestion,
-      answers: [...(selectedQuestion.answers ?? []), answer],
-      status: 'ANSWERED'
-    });
-    setNewAnswer({ type: 'TEXT', content: '' });
   };
   
   const sortQuestions = (questionsToSort: QuestionWithRelations[]): QuestionWithRelations[] => {
@@ -920,7 +920,7 @@ const App: React.FC = () => {
     
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-4xl w-full border border-white/20 my-8">
+        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-4xl w-full border border-white/20 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-start mb-6">
             <h2 className="text-3xl font-bold pr-4">{question.text}</h2>
             <button onClick={() => setSelectedQuestion(null)} className="p-2 hover:bg-white/10 rounded-lg">
