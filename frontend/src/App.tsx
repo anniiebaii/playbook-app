@@ -230,9 +230,6 @@ const App: React.FC = () => {
     }
     const now = new Date();
 
-    // Prevent votes from rapidly resorting in the UI.
-    setLastVoteTime(now.getTime());
-
     let newUpvotes: QuestionUpvote[] = Array.isArray(question.upvotes) ? [...question.upvotes] : [];
 
     const isUpvoted = checkIfUserUpvoted(questions.find(q => q.id === questionId)!);
@@ -270,30 +267,51 @@ const App: React.FC = () => {
     }));
   };
 
-  const toggleSave = (questionId: number): void => {
+  const toggleSave = async (questionId: number) => {
     if (!isAuthenticated) {
       setShowAuthPage(true);
       return;
     }
     
-    // TODO: implement bookmark persistence logic with DB
+    const question = getQuestionById(questionId);
+
+    if (!question) {
+      console.error('Question not found with ID:', questionId);
+      return;
+    }
+    const now = new Date();
+
+    let newBookmarks: QuestionBookmark[] = Array.isArray(question.bookmarks) ? [...question.bookmarks] : [];
+
+    const isSaved = checkIfUserBookmarked(question);
+
+    let newBookmark: QuestionBookmark = {
+      id: newBookmarks.length > 0 ? Math.max(...newBookmarks.map(u => u.id)) + 1 : 1, // Temporary ID; will be replaced by DB ID
+      questionId: questionId,
+      userId: currentUser!.id,
+      createdAt: now,
+    }; 
+
+    if (isSaved) {
+      // Remove bookmark
+      newBookmarks = newBookmarks.filter(upvote => upvote.userId !== currentUser!.id);
+
+      await BookmarkService.deleteByQuestionAndUser(questionId, currentUser!.id);
+
+    } else {
+      // Add bookmark
+      const insertedBookmark = await BookmarkService.create(newBookmark);
+      newBookmark.id = insertedBookmark.id; // Get actual ID from DB and replace temporary ID
+      newBookmarks.push(newBookmark);
+    }
+    
+    // Update Bookmark states
     setQuestions(questions.map(q => {
       if (q.id === questionId) {
-        const isSaved = checkIfUserBookmarked(q)
-        let newBookmarks: QuestionBookmark[] = Array.isArray(q.bookmarks) ? [...q.bookmarks] : [];
-        if (isSaved) {
-          newBookmarks = newBookmarks.filter(bookmark => bookmark.userId !== currentUser!.id);
-        } else {
-          newBookmarks.push({
-            id: newBookmarks.length > 0 ? Math.max(...newBookmarks.map(b => b.id)) + 1 : 1, // TODO: get ID from sequence in DB
-            questionId: q.id,
-            userId: currentUser!.id,
-            createdAt: new Date()
-          });
-        }
         return {
           ...q,
-          bookmarks: newBookmarks
+          bookmarks: newBookmarks,
+          bookmarkCount: newBookmarks.length
         };
       }
       return q;
