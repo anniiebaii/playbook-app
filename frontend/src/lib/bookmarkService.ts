@@ -13,6 +13,16 @@ export class BookmarkService {
         if (error) throw error
     }
 
+    static async deleteByQuestionAndUser(questionId: number, userId: number): Promise<void> {
+        console.log('Deleting bookmark for question ID:', questionId, 'and user ID:', userId);
+        const { error } = await supabase
+            .from('question_bookmarks')
+            .delete()
+            .eq('questionId', questionId)
+            .eq('userId', userId)
+        if (error) throw error
+    }
+
 
     static async create(bookmarkData: CreateBookmarkInput): Promise<QuestionBookmark> {
         console.log('Creating question with data:', bookmarkData);
