@@ -920,6 +920,8 @@ const App: React.FC = () => {
     
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        {/* max-h-[90vh]: keep the modal from being taller than 90% of the viewport height. */}
+        { /* overflow-y-auto: make the modal scroll internally when content overflows. */}
         <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-4xl w-full border border-white/20 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-start mb-6">
             <h2 className="text-3xl font-bold pr-4">{question.text}</h2>
