@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations } from './lib/supabase';
+import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations, CreateUpvoteInput } from './lib/supabase';
 import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User as LucideUser, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
 import { api } from './lib/api';
 import { QuestionService } from './lib/questionService';
 import { AnswerService } from './lib/answerService';
-
+import { UpvoteService } from './lib/upvoteService';
+import { UserService } from './lib/userService';
+import { BookmarkService } from './lib/bookmarkService';
+import { get } from 'http';
 
 // Types and Interfaces
 type ViewMode = 'trending' | 'recent' | 'unanswered';
@@ -12,6 +15,7 @@ type AuthMode = 'signin' | 'signup';
 type AdminView = 'dashboard' | 'questions' | 'users';
 
 const App: React.FC = () => {
+  // TODO: implement real authentication and user management
   // Initialize users with defaults
   const getInitialUsers = (): User[] => {
     return [
@@ -73,48 +77,14 @@ const App: React.FC = () => {
   }
 
 
-  // Initialize questions
-  const getInitialQuestions = (): QuestionWithRelations[] => {
+  // Dummy questions
+  const getDummyQuestions = (): QuestionWithRelations[] => {
 
     return [
-      {
-        id: 9999,
-        text: "How do you keep the sales team motivated?",
-        description: "Our sales team has been struggling with morale lately. What are some proven strategies to boost motivation and maintain high energy levels throughout the quarter?",
-        author: getInitialUsers()[0],
-        authorId: getInitialUsers()[0].id, // Use a default User object for demo data
-        role: "Owner",
-        tags: ["Team Management", "Sales"],
-        upvotes: [],
-        bookmarks: [],
-        status: "ANSWERED",
-        priority: "HIGH",
-        views: 234,
-        answers: [
-          {
-            id: 1,
-            type: "TEXT",
-            content: "Regular recognition programs and clear goal setting have been key for us. We celebrate small wins weekly and have quarterly team events.",
-            authorId: 11,
-            author: getInitialUsers()[0],
-            questionId: 9999,
-            isAdmin: true,
-            createdAt: new Date('2025-05-28'),
-            updatedAt: new Date('2025-05-28')
-          }
-        ],
-        createdAt: new Date('2025-05-25'),
-        updatedAt: new Date('2025-05-28')
-      }
     ];
   };
 
-  // const getInitialQuestions = (): QuestionWithRelations[] => {
-  //   // Return an empty array initially; questions will be loaded asynchronously
-  //   return [];
-  // }
-
-  // State with proper typing
+  // React Hooks and States with proper typing
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showAuthPage, setShowAuthPage] = useState<boolean>(false);
@@ -122,27 +92,48 @@ const App: React.FC = () => {
   const [isAdminView, setIsAdminView] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>('trending');
 
-  const [showAskQuestion, setShowAskQuestion] = useState<boolean>(false);
-  const [selectedQuestion, setSelectedQuestion] = useState<QuestionWithRelations | null>(null);
-  const [showNotifications, setShowNotifications] = useState<boolean>(false);
-  const [showExperts, setShowExperts] = useState<boolean>(false);
-  const [selectedExpert, setSelectedExpert] = useState<User | null>(null);
-  const [showAskExpert, setShowAskExpert] = useState<boolean>(false);
-  const [questions, setQuestions] = useState<QuestionWithRelations[]>(getInitialQuestions());
-
-  useEffect(() => {
-    // Fetch questions asynchronously on mount
-    QuestionService.getQuestionsWithRelations().then((data) => {
-      console.log(data);
-      setQuestions(getInitialQuestions().concat(data));
-    });
-  }, []);
-  
+  /* App Object States */
   const [users, setUsers] = useState<User[]>(getInitialUsers());
   const [upvotes, setUpvotes] = useState<QuestionUpvote[]>(getUpvotes());
   const [bookmarks, setBookmarks] = useState<QuestionBookmark[]>(getBookmarks());
+  const [questions, setQuestions] = useState<QuestionWithRelations[]>(getDummyQuestions());
+
+  /* Question States */
+  const [showAskQuestion, setShowAskQuestion] = useState<boolean>(false);
+  const [selectedQuestion, setSelectedQuestion] = useState<QuestionWithRelations | null>(null);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
+
+  /* Answer States */
+  const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'TEXT', content: '' });
+
+  const [showNotifications, setShowNotifications] = useState<boolean>(false);
+
+  /* Expert User States */
+  const [showExperts, setShowExperts] = useState<boolean>(false);
+  const [selectedExpert, setSelectedExpert] = useState<User | null>(null);
+  const [showAskExpert, setShowAskExpert] = useState<boolean>(false);
 
 
+  useEffect(() => {
+    const fetchQuestions = async () => {
+     try {
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 seconds delay
+
+      const data = await QuestionService.getQuestionsWithRelations();
+      setQuestions(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingQuestions(false);
+    }
+    };
+    
+    fetchQuestions();
+  }, []);  
+
+
+  const [lastVoteTime, setLastVoteTime] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: 1,
@@ -159,8 +150,7 @@ const App: React.FC = () => {
   const tags: string[] = ["Objections", "Recruiting", "Daily Routines", "Team Management", "Sales", "Skills", "Leadership"];
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
-  const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'TEXT', content: '' });
-  
+
   // Functions with proper typing
   const formatTimestamp = (date: Date): string => {
     const now = new Date();
@@ -208,73 +198,13 @@ const App: React.FC = () => {
     setShowAskQuestion(false);
   };
 
-  const toggleUpvote = (questionId: number): void => {
-    if (!isAuthenticated) {
-      setShowAuthPage(true);
-      return;
-    }
+    const handleAddAnswer = async (content: string, type: Answer["type"]) => {
+    if (!selectedQuestion || !currentUser?.isAdmin || !content) return;
     
-    // TODO: implement upvote persistence logic with DB
-    setQuestions(questions.map(q => {
-      if (q.id === questionId) {
-        const isUpvoted = checkIfUserUpvoted(q);
-        let newUpvotes: QuestionUpvote[] = Array.isArray(q.upvotes) ? [...q.upvotes] : [];
-        if (isUpvoted) {
-          newUpvotes = newUpvotes.filter(upvote => upvote.userId !== currentUser!.id);
-        } else {
-          newUpvotes.push({
-            id: newUpvotes.length > 0 ? Math.max(...newUpvotes.map(u => u.id)) + 1 : 1, // TODO: get ID from sequence in DB
-            questionId: q.id,
-            userId: currentUser!.id,
-            createdAt: new Date()
-          });
-        }
-        return {
-          ...q,
-          upvotes: newUpvotes
-        };
-      }
-      return q;
-    }));
-  };
-
-  const toggleSave = (questionId: number): void => {
-    if (!isAuthenticated) {
-      setShowAuthPage(true);
-      return;
-    }
-    
-    // TODO: implement bookmark persistence logic with DB
-    setQuestions(questions.map(q => {
-      if (q.id === questionId) {
-        const isSaved = checkIfUserBookmarked(q)
-        let newBookmarks: QuestionBookmark[] = Array.isArray(q.bookmarks) ? [...q.bookmarks] : [];
-        if (isSaved) {
-          newBookmarks = newBookmarks.filter(bookmark => bookmark.userId !== currentUser!.id);
-        } else {
-          newBookmarks.push({
-            id: newBookmarks.length > 0 ? Math.max(...newBookmarks.map(b => b.id)) + 1 : 1, // TODO: get ID from sequence in DB
-            questionId: q.id,
-            userId: currentUser!.id,
-            createdAt: new Date()
-          });
-        }
-        return {
-          ...q,
-          bookmarks: newBookmarks
-        };
-      }
-      return q;
-    }));
-  };
-
-  const handleAddAnswer = (): void => {
-    if (!selectedQuestion || !currentUser?.isAdmin || !newAnswer.content) return;
-    
-    const answer: AnswerWithRelations = {
+    let answer: AnswerWithRelations = {
       id: (selectedQuestion.answers?.length ?? 0) + 1,
-      type: newAnswer.type,
-      content: newAnswer.content,
+      type: type,
+      content: content,
       author: currentUser,
       authorId: currentUser.id,
       isAdmin: true,
@@ -284,14 +214,19 @@ const App: React.FC = () => {
     };
 
     const answerData: AnswerData = {
-      type: newAnswer.type,
-      content: newAnswer.content,
+      type: type,
+      content: content,
       authorId: currentUser.id,
       questionId: selectedQuestion.id,
       isAdmin: true
     };
 
-    AnswerService.createAnswer(answerData);
+    const insertedAnswer = await AnswerService.createAnswer(answerData);
+
+    answer.id = insertedAnswer.id;
+
+    // Update question's status
+    QuestionService.update(selectedQuestion.id, { status: 'ANSWERED' });
     
     setQuestions(questions.map(q => 
       q.id === selectedQuestion.id 
@@ -312,12 +247,114 @@ const App: React.FC = () => {
     setNewAnswer({ type: 'TEXT', content: '' });
   };
 
-  const filteredQuestions = questions.filter(q => {
-    const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         q.author.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = !selectedTag || q.tags.includes(selectedTag);
-    return matchesSearch && matchesTag;
-  }).sort((a, b) => {
+  const getQuestionById = (id: number): QuestionWithRelations | undefined => {
+    return questions.find(q => q.id === id);
+  }
+
+  const toggleUpvote = async (questionId: number) => {
+    if (!isAuthenticated) {
+      setShowAuthPage(true);
+      return;
+    }
+
+    const question = getQuestionById(questionId);
+
+    if (!question) {
+      console.error('Question not found with ID:', questionId);
+      return;
+    }
+    const now = new Date();
+
+    let newUpvotes: QuestionUpvote[] = Array.isArray(question.upvotes) ? [...question.upvotes] : [];
+
+    const isUpvoted = checkIfUserUpvoted(questions.find(q => q.id === questionId)!);
+
+    let newUpvote: QuestionUpvote = {
+      id: newUpvotes.length > 0 ? Math.max(...newUpvotes.map(u => u.id)) + 1 : 1, // Temporary ID; will be replaced by DB ID
+      questionId: questionId,
+      userId: currentUser!.id,
+      createdAt: now,
+    }; 
+
+    if (isUpvoted) {
+      // Remove upvote
+      newUpvotes = newUpvotes.filter(upvote => upvote.userId !== currentUser!.id);
+
+      await UpvoteService.deleteByQuestionAndUser(questionId, currentUser!.id);
+
+    } else {
+      // Add upvote
+      const insertedUpvote = await UpvoteService.create(newUpvote);
+      newUpvote.id = insertedUpvote.id; // Get actual ID from DB and replace temporary ID
+      newUpvotes.push(newUpvote);
+    }
+    
+    // Update upvote states
+    setQuestions(questions.map(q => {
+      if (q.id === questionId) {
+        return {
+          ...q,
+          upvotes: newUpvotes,
+          upvoteCount: newUpvotes.length
+        };
+      }
+      return q;
+    }));
+  };
+
+  const toggleSave = async (questionId: number) => {
+    if (!isAuthenticated) {
+      setShowAuthPage(true);
+      return;
+    }
+    
+    const question = getQuestionById(questionId);
+
+    if (!question) {
+      console.error('Question not found with ID:', questionId);
+      return;
+    }
+    const now = new Date();
+
+    let newBookmarks: QuestionBookmark[] = Array.isArray(question.bookmarks) ? [...question.bookmarks] : [];
+
+    const isSaved = checkIfUserBookmarked(question);
+
+    let newBookmark: QuestionBookmark = {
+      id: newBookmarks.length > 0 ? Math.max(...newBookmarks.map(u => u.id)) + 1 : 1, // Temporary ID; will be replaced by DB ID
+      questionId: questionId,
+      userId: currentUser!.id,
+      createdAt: now,
+    }; 
+
+    if (isSaved) {
+      // Remove bookmark
+      newBookmarks = newBookmarks.filter(upvote => upvote.userId !== currentUser!.id);
+
+      await BookmarkService.deleteByQuestionAndUser(questionId, currentUser!.id);
+
+    } else {
+      // Add bookmark
+      const insertedBookmark = await BookmarkService.create(newBookmark);
+      newBookmark.id = insertedBookmark.id; // Get actual ID from DB and replace temporary ID
+      newBookmarks.push(newBookmark);
+    }
+    
+    // Update Bookmark states
+    setQuestions(questions.map(q => {
+      if (q.id === questionId) {
+        return {
+          ...q,
+          bookmarks: newBookmarks,
+          bookmarkCount: newBookmarks.length
+        };
+      }
+      return q;
+    }));
+  };
+  
+  const sortQuestions = (questionsToSort: QuestionWithRelations[]): QuestionWithRelations[] => {
+     return [...questionsToSort].sort((a, b) => {
     if (viewMode === 'recent') {
       return b.createdAt.getTime() - a.createdAt.getTime();
     } else if (viewMode === 'unanswered') {
@@ -325,9 +362,31 @@ const App: React.FC = () => {
       if (a.status !== 'PENDING' && b.status === 'PENDING') return 1;
       return b.createdAt.getTime() - a.createdAt.getTime();
     } else { // trending
-      if (b.upvotes !== a.upvotes) return (b.upvoteCount ?? 0) - (a.upvoteCount ?? 0);
+      //Compare upvoteCount directly, not upvotes arrays
+      const aUpvoteCount = a.upvoteCount ?? a.upvotes?.length ?? 0;
+      const bUpvoteCount = b.upvoteCount ?? b.upvotes?.length ?? 0;
+      
+      if (bUpvoteCount !== aUpvoteCount) {
+        return bUpvoteCount - aUpvoteCount;
+      }
       return b.createdAt.getTime() - a.createdAt.getTime();
     }
+  })
+  }
+
+  // Only sort when loading data initially
+  useEffect(() => {
+    // When questions first load, sort them once
+    if (questions.length > 0) {
+      setQuestions(sortQuestions(questions));
+    }
+  }, [questions.length, viewMode]); // Only when data loads or view changes
+
+  const filteredQuestions = questions.filter(q => {
+    const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         q.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTag = !selectedTag || q.tags.includes(selectedTag);
+    return matchesSearch && matchesTag;
   });
 
   const checkIfUserUpvoted = (question: QuestionWithRelations) : boolean => {
@@ -846,13 +905,18 @@ const App: React.FC = () => {
   };
 
   const QuestionDetailModal = () => {
+    // Define our React Hook for managing the answer text state
+    const [answerText, setAnswerText] = useState("");
+
     if (!selectedQuestion) return null;
     
     const question = questions.find(q => q.id === selectedQuestion.id) || selectedQuestion;
-    
+
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-4xl w-full border border-white/20 my-8">
+        {/* max-h-[90vh]: keep the modal from being taller than 90% of the viewport height. */}
+        { /* overflow-y-auto: make the modal scroll internally when content overflows. */}
+        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-4xl w-full border border-white/20 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-start mb-6">
             <h2 className="text-3xl font-bold pr-4">{question.text}</h2>
             <button onClick={() => setSelectedQuestion(null)} className="p-2 hover:bg-white/10 rounded-lg">
@@ -899,14 +963,17 @@ const App: React.FC = () => {
                   Add Admin Answer
                 </h4>
                 <textarea
-                  value={newAnswer.content}
-                  onChange={(e) => setNewAnswer({ ...newAnswer, content: e.target.value })}
+                  value={answerText}
+                  onChange={(e) => setAnswerText(e.target.value)}
                   placeholder="Type your answer..."
                   className="w-full p-3 mb-4 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 min-h-[100px]"
                 />
                 <button
-                  onClick={handleAddAnswer}
-                  disabled={!newAnswer.content}
+                  onClick={() => {
+                    handleAddAnswer(answerText, "TEXT");
+                    setAnswerText(""); // clear after posting
+                  }}
+                  disabled={!answerText}
                   className="w-full py-3 bg-white/20 rounded-lg font-semibold hover:bg-white/30 transition disabled:opacity-50"
                 >
                   Post Answer
@@ -1138,6 +1205,15 @@ const App: React.FC = () => {
     );
   };
 
+  const LoadingQuestionsSpinner: React.FC = () => {
+  return (
+    <div className="flex flex-col justify-center items-center py-16">
+      <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+      <span className="text-white/80 text-lg font-medium">Loading questions...</span>
+    </div>
+  );
+};
+
   // Show auth page
   if (showAuthPage) {
     return <AuthPage />;
@@ -1329,7 +1405,8 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          {filteredQuestions.length === 0 ? (
+          { loadingQuestions ? <LoadingQuestionsSpinner/> : null }
+          { !loadingQuestions && filteredQuestions.length === 0 ? (
             <div className="text-center py-16">
               <HelpCircle className="w-16 h-16 text-white/30 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No questions found</h3>
