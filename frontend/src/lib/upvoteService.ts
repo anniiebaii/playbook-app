@@ -13,6 +13,15 @@ export class UpvoteService {
         if (error) throw error
     }
 
+    static async deleteByQuestionAndUser(questionId: number, userId: number): Promise<void> {
+        console.log('Deleting upvote for question ID:', questionId, 'and user ID:', userId);
+        const { error } = await supabase
+            .from('question_upvotes')
+            .delete()
+            .eq('questionId', questionId)
+            .eq('userId', userId)
+        if (error) throw error
+    }
 
     static async create(upvoteData: CreateUpvoteInput): Promise<QuestionUpvote> {
         console.log('Creating question with data:', upvoteData);
