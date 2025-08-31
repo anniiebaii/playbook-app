@@ -210,13 +210,13 @@ const App: React.FC = () => {
     setShowAskQuestion(false);
   };
 
-    const handleAddAnswer = async () => {
-    if (!selectedQuestion || !currentUser?.isAdmin || !newAnswer.content) return;
+    const handleAddAnswer = async (content: string, type: Answer["type"]) => {
+    if (!selectedQuestion || !currentUser?.isAdmin || !content) return;
     
     let answer: AnswerWithRelations = {
       id: (selectedQuestion.answers?.length ?? 0) + 1,
-      type: newAnswer.type,
-      content: newAnswer.content,
+      type: type,
+      content: content,
       author: currentUser,
       authorId: currentUser.id,
       isAdmin: true,
@@ -226,8 +226,8 @@ const App: React.FC = () => {
     };
 
     const answerData: AnswerData = {
-      type: newAnswer.type,
-      content: newAnswer.content,
+      type: type,
+      content: content,
       authorId: currentUser.id,
       questionId: selectedQuestion.id,
       isAdmin: true
@@ -914,10 +914,13 @@ const App: React.FC = () => {
   };
 
   const QuestionDetailModal = () => {
+    // Define our React Hook for managing the answer text state
+    const [answerText, setAnswerText] = useState("");
+
     if (!selectedQuestion) return null;
     
     const question = questions.find(q => q.id === selectedQuestion.id) || selectedQuestion;
-    
+
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
         {/* max-h-[90vh]: keep the modal from being taller than 90% of the viewport height. */}
@@ -969,14 +972,17 @@ const App: React.FC = () => {
                   Add Admin Answer
                 </h4>
                 <textarea
-                  value={newAnswer.content}
-                  onChange={(e) => setNewAnswer({ ...newAnswer, content: e.target.value })}
+                  value={answerText}
+                  onChange={(e) => setAnswerText(e.target.value)}
                   placeholder="Type your answer..."
                   className="w-full p-3 mb-4 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 min-h-[100px]"
                 />
                 <button
-                  onClick={handleAddAnswer}
-                  disabled={!newAnswer.content}
+                  onClick={() => {
+                    handleAddAnswer(answerText, "TEXT");
+                    setAnswerText(""); // clear after posting
+                  }}
+                  disabled={!answerText}
                   className="w-full py-3 bg-white/20 rounded-lg font-semibold hover:bg-white/30 transition disabled:opacity-50"
                 >
                   Post Answer
