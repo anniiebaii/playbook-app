@@ -236,6 +236,9 @@ const App: React.FC = () => {
     const insertedAnswer = await AnswerService.createAnswer(answerData);
 
     answer.id = insertedAnswer.id;
+
+    // Update question's status
+    QuestionService.update(selectedQuestion.id, { status: 'ANSWERED' });
     
     setQuestions(questions.map(q => 
       q.id === selectedQuestion.id 

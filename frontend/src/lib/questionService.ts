@@ -181,6 +181,19 @@ export class QuestionService {
         return data as Question
     }
 
+    static async update(quesionId: number, updates: Partial<Question>): Promise<Question> {
+        console.log('Updating question ID:', quesionId, 'with data:', updates);
+        const { data, error } = await supabase
+            .from('questions')
+            .update(updates)
+            .eq('id', quesionId)
+            .select(`
+            *`)
+            .single()
+        if (error) throw error
+        return data as Question
+    }
+
   /**
    * Get questions bookmarked by a specific user
    */
