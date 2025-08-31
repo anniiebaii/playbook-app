@@ -1,74 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
+import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations } from './lib/supabase';
+import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User as LucideUser, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
+import { api } from './lib/api';
+import { QuestionService } from './lib/questionService';
+import { AnswerService } from './lib/answerService';
+
 
 // Types and Interfaces
-interface User {
-  email: string;
-  password: string;
-  name: string;
-  isAdmin: boolean;
-  joinDate: Date;
-  status: 'active' | 'inactive';
-  title?: string;
-  expertise?: string[];
-  bio?: string;
-  answersCount?: number;
-  rating?: number;
-  responseTime?: string;
-  avatar?: string;
-  points: number;
-}
-
-interface Answer {
-  id: number;
-  type: 'text' | 'video' | 'audio';
-  content: string;
-  author: string;
-  isAdmin: boolean;
-  timestamp: Date;
-}
-
-interface Question {
-  id: number;
-  text: string;
-  description?: string;
-  author: string;
-  authorEmail: string;
-  role: string;
-  tags: string[];
-  upvotes: number;
-  upvotedBy: string[];
-  savedBy: string[];
-  status: 'pending' | 'answered';
-  priority: 'low' | 'medium' | 'high';
-  views: number;
-  assignedTo?: string;
-  answers: Answer[];
-  timestamp: Date;
-}
-
-interface Notification {
-  id: number;
-  type: 'answer' | 'question' | 'upvote';
-  title: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  icon: React.ComponentType<any>;
-  color: string;
-}
-
-interface NewAnswer {
-  type: 'text' | 'video' | 'audio';
-  content: string;
-}
-
-interface QuestionData {
-  text: string;
-  description?: string;
-  tags: string[];
-}
-
 type ViewMode = 'trending' | 'recent' | 'unanswered';
 type AuthMode = 'signin' | 'signup';
 type AdminView = 'dashboard' | 'questions' | 'users';
@@ -78,6 +16,7 @@ const App: React.FC = () => {
   const getInitialUsers = (): User[] => {
     return [
       { 
+        id: 11,
         email: 'admin@leaderlink.com', 
         password: 'admin123', 
         name: 'Stacey Santos', 
@@ -94,6 +33,7 @@ const App: React.FC = () => {
         points: 15600
       },
       { 
+        id: 22,
         email: 'sarah.expert@leaderlink.com', 
         password: 'expert123', 
         name: 'Richard Anderson', 
@@ -110,6 +50,7 @@ const App: React.FC = () => {
         points: 8900
       },
       { 
+        id: 33,
         email: 'demo@example.com', 
         password: 'demo123', 
         name: 'Demo User', 
@@ -121,123 +62,57 @@ const App: React.FC = () => {
     ];
   };
 
+  const getUpvotes = (): QuestionUpvote[] => {
+    // TODO: implement fetching upvotes from DB logic
+    return [];
+  }
+
+  const getBookmarks = (): QuestionBookmark[] => {  
+    // TODO: implement fetching bookmarks from DB logic
+    return [];
+  }
+
+
   // Initialize questions
-  const getInitialQuestions = (): Question[] => {
+  const getInitialQuestions = (): QuestionWithRelations[] => {
+
     return [
       {
-        id: 1,
+        id: 9999,
         text: "How do you keep the sales team motivated?",
         description: "Our sales team has been struggling with morale lately. What are some proven strategies to boost motivation and maintain high energy levels throughout the quarter?",
-        author: "Mary Johnson",
-        authorEmail: "mary@company.com",
+        author: getInitialUsers()[0],
+        authorId: getInitialUsers()[0].id, // Use a default User object for demo data
         role: "Owner",
         tags: ["Team Management", "Sales"],
-        upvotes: 42,
-        upvotedBy: [],
-        savedBy: [],
-        status: "answered",
-        priority: "high",
+        upvotes: [],
+        bookmarks: [],
+        status: "ANSWERED",
+        priority: "HIGH",
         views: 234,
         answers: [
           {
             id: 1,
-            type: "text",
+            type: "TEXT",
             content: "Regular recognition programs and clear goal setting have been key for us. We celebrate small wins weekly and have quarterly team events.",
-            author: "Stacey Santos",
+            authorId: 11,
+            author: getInitialUsers()[0],
+            questionId: 9999,
             isAdmin: true,
-            timestamp: new Date('2025-05-28')
+            createdAt: new Date('2025-05-28'),
+            updatedAt: new Date('2025-05-28')
           }
         ],
-        timestamp: new Date('2025-05-25')
-      },
-      {
-        id: 2,
-        text: "What's the best way to handle price objections?",
-        description: "I keep losing deals when prospects say we're too expensive. How can I better communicate value and overcome price objections without immediately offering discounts?",
-        author: "James Smith",
-        authorEmail: "james@business.com",
-        role: "Senior Partner",
-        tags: ["Objections", "Sales"],
-        upvotes: 38,
-        upvotedBy: [],
-        savedBy: [],
-        status: "pending",
-        priority: "medium",
-        views: 189,
-        answers: [],
-        timestamp: new Date('2025-05-26')
-      },
-      {
-        id: 3,
-        text: "Any tips for improving cold calling skills?",
-        description: "I'm new to sales and struggling with cold calls. Looking for practical tips and scripts that actually work in today's market.",
-        author: "Sarah Martinez",
-        authorEmail: "sarah@startup.com",
-        role: "President",
-        tags: ["Sales", "Skills"],
-        upvotes: 29,
-        upvotedBy: [],
-        savedBy: [],
-        status: "pending",
-        priority: "low",
-        views: 145,
-        answers: [],
-        timestamp: new Date('2025-05-27')
-      },
-      {
-        id: 4,
-        text: "How to structure compensation plans for sales teams?",
-        description: "We're redesigning our sales compensation structure. What are the best practices for creating a plan that drives performance while maintaining team cohesion?",
-        author: "Michael Chen",
-        authorEmail: "michael@techcorp.com",
-        role: "CEO",
-        tags: ["Team Management", "Sales"],
-        upvotes: 56,
-        upvotedBy: [],
-        savedBy: [],
-        status: "answered",
-        priority: "high",
-        views: 412,
-        answers: [
-          {
-            id: 1,
-            type: "text",
-            content: "A balanced approach works best: 60% base, 30% individual commission, 10% team bonus. This ensures stability while incentivizing both personal and team performance.",
-            author: "Richard Anderson",
-            isAdmin: true,
-            timestamp: new Date('2025-05-27')
-          }
-        ],
-        timestamp: new Date('2025-05-24')
-      },
-      {
-        id: 5,
-        text: "What metrics should we track for sales performance?",
-        description: "Beyond just revenue, what KPIs should we monitor to ensure our sales team is performing optimally and identify areas for improvement?",
-        author: "Lisa Wang",
-        authorEmail: "lisa@enterprise.com",
-        role: "VP Sales",
-        tags: ["Sales", "Leadership"],
-        upvotes: 47,
-        upvotedBy: [],
-        savedBy: [],
-        status: "answered",
-        priority: "medium",
-        views: 367,
-        answers: [
-          {
-            id: 1,
-            type: "text",
-            content: "Track activity metrics (calls, emails, meetings), pipeline velocity, conversion rates at each stage, average deal size, and customer acquisition cost. These provide a comprehensive view of performance.",
-            author: "Stacey Santos",
-            isAdmin: true,
-            timestamp: new Date('2025-05-26')
-          }
-        ],
-        timestamp: new Date('2025-05-23')
+        createdAt: new Date('2025-05-25'),
+        updatedAt: new Date('2025-05-28')
       }
     ];
   };
+
+  // const getInitialQuestions = (): QuestionWithRelations[] => {
+  //   // Return an empty array initially; questions will be loaded asynchronously
+  //   return [];
+  // }
 
   // State with proper typing
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -245,16 +120,29 @@ const App: React.FC = () => {
   const [showAuthPage, setShowAuthPage] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [isAdminView, setIsAdminView] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('trending');
+
   const [showAskQuestion, setShowAskQuestion] = useState<boolean>(false);
-  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [selectedQuestion, setSelectedQuestion] = useState<QuestionWithRelations | null>(null);
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [showExperts, setShowExperts] = useState<boolean>(false);
   const [selectedExpert, setSelectedExpert] = useState<User | null>(null);
   const [showAskExpert, setShowAskExpert] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('trending');
+  const [questions, setQuestions] = useState<QuestionWithRelations[]>(getInitialQuestions());
+
+  useEffect(() => {
+    // Fetch questions asynchronously on mount
+    QuestionService.getQuestionsWithRelations().then((data) => {
+      console.log(data);
+      setQuestions(getInitialQuestions().concat(data));
+    });
+  }, []);
   
   const [users, setUsers] = useState<User[]>(getInitialUsers());
-  const [questions, setQuestions] = useState<Question[]>(getInitialQuestions());
+  const [upvotes, setUpvotes] = useState<QuestionUpvote[]>(getUpvotes());
+  const [bookmarks, setBookmarks] = useState<QuestionBookmark[]>(getBookmarks());
+
+
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: 1,
@@ -271,11 +159,12 @@ const App: React.FC = () => {
   const tags: string[] = ["Objections", "Recruiting", "Daily Routines", "Team Management", "Sales", "Skills", "Leadership"];
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
-  const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'text', content: '' });
-
+  const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'TEXT', content: '' });
+  
   // Functions with proper typing
   const formatTimestamp = (date: Date): string => {
     const now = new Date();
+    console.log(date);
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
@@ -293,24 +182,28 @@ const App: React.FC = () => {
     setIsAdminView(false);
   };
 
-  const handleAskQuestion = (questionData: QuestionData): void => {
-    const newQuestion: Question = {
+  const handleAskQuestion = async (questionData: QuestionData) => {
+    const now = new Date();
+    const newQuestion: QuestionWithRelations = {
       id: questions.length + 1,
-      text: questionData.text,
+      text: questionData.title,
       description: questionData.description || '',
-      author: currentUser?.name || 'Anonymous',
-      authorEmail: currentUser?.email || 'anonymous@example.com',
+      author: currentUser!,
+      authorId: currentUser?.id || 0,
       role: "Member",
       tags: questionData.tags,
-      upvotes: 0,
-      upvotedBy: [],
-      savedBy: [],
-      status: "pending",
-      priority: "low",
+      upvotes: [],
+      status: "PENDING",
+      priority: "LOW",
       views: 0,
       answers: [],
-      timestamp: new Date()
+      createdAt: now,
+      updatedAt: now
     };
+
+    const insertedQuestion = await QuestionService.createQuestion(questionData);
+    // reconcile actual id with temp id
+    newQuestion.id = insertedQuestion.id;
     setQuestions([newQuestion, ...questions]);
     setShowAskQuestion(false);
   };
@@ -321,15 +214,24 @@ const App: React.FC = () => {
       return;
     }
     
+    // TODO: implement upvote persistence logic with DB
     setQuestions(questions.map(q => {
       if (q.id === questionId) {
-        const isUpvoted = q.upvotedBy.includes(currentUser!.email);
+        const isUpvoted = checkIfUserUpvoted(q);
+        let newUpvotes: QuestionUpvote[] = Array.isArray(q.upvotes) ? [...q.upvotes] : [];
+        if (isUpvoted) {
+          newUpvotes = newUpvotes.filter(upvote => upvote.userId !== currentUser!.id);
+        } else {
+          newUpvotes.push({
+            id: newUpvotes.length > 0 ? Math.max(...newUpvotes.map(u => u.id)) + 1 : 1, // TODO: get ID from sequence in DB
+            questionId: q.id,
+            userId: currentUser!.id,
+            createdAt: new Date()
+          });
+        }
         return {
           ...q,
-          upvotedBy: isUpvoted 
-            ? q.upvotedBy.filter(email => email !== currentUser!.email)
-            : [...q.upvotedBy, currentUser!.email],
-          upvotes: isUpvoted ? q.upvotes - 1 : q.upvotes + 1
+          upvotes: newUpvotes
         };
       }
       return q;
@@ -342,14 +244,24 @@ const App: React.FC = () => {
       return;
     }
     
+    // TODO: implement bookmark persistence logic with DB
     setQuestions(questions.map(q => {
       if (q.id === questionId) {
-        const isSaved = q.savedBy.includes(currentUser!.email);
+        const isSaved = checkIfUserBookmarked(q)
+        let newBookmarks: QuestionBookmark[] = Array.isArray(q.bookmarks) ? [...q.bookmarks] : [];
+        if (isSaved) {
+          newBookmarks = newBookmarks.filter(bookmark => bookmark.userId !== currentUser!.id);
+        } else {
+          newBookmarks.push({
+            id: newBookmarks.length > 0 ? Math.max(...newBookmarks.map(b => b.id)) + 1 : 1, // TODO: get ID from sequence in DB
+            questionId: q.id,
+            userId: currentUser!.id,
+            createdAt: new Date()
+          });
+        }
         return {
           ...q,
-          savedBy: isSaved 
-            ? q.savedBy.filter(email => email !== currentUser!.email)
-            : [...q.savedBy, currentUser!.email]
+          bookmarks: newBookmarks
         };
       }
       return q;
@@ -359,48 +271,72 @@ const App: React.FC = () => {
   const handleAddAnswer = (): void => {
     if (!selectedQuestion || !currentUser?.isAdmin || !newAnswer.content) return;
     
-    const answer: Answer = {
-      id: selectedQuestion.answers.length + 1,
+    const answer: AnswerWithRelations = {
+      id: (selectedQuestion.answers?.length ?? 0) + 1,
       type: newAnswer.type,
       content: newAnswer.content,
-      author: currentUser.name,
+      author: currentUser,
+      authorId: currentUser.id,
       isAdmin: true,
-      timestamp: new Date()
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      questionId: selectedQuestion.id
     };
+
+    const answerData: AnswerData = {
+      type: newAnswer.type,
+      content: newAnswer.content,
+      authorId: currentUser.id,
+      questionId: selectedQuestion.id,
+      isAdmin: true
+    };
+
+    AnswerService.createAnswer(answerData);
     
     setQuestions(questions.map(q => 
       q.id === selectedQuestion.id 
-        ? { ...q, answers: [...q.answers, answer], status: 'answered' as const }
+        ? { ...q, answers: [...(q.answers ?? []), answer], status: 'ANSWERED' as const }
         : q
     ));
     
     const updatedQuestion: Question = {
       ...selectedQuestion,
-      answers: [...selectedQuestion.answers, answer],
-      status: 'answered'
+      status: 'ANSWERED'
     };
     
-    setSelectedQuestion(updatedQuestion);
-    setNewAnswer({ type: 'text', content: '' });
+    setSelectedQuestion({
+      ...selectedQuestion,
+      answers: [...(selectedQuestion.answers ?? []), answer],
+      status: 'ANSWERED'
+    });
+    setNewAnswer({ type: 'TEXT', content: '' });
   };
 
   const filteredQuestions = questions.filter(q => {
     const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         q.author.toLowerCase().includes(searchQuery.toLowerCase());
+                         q.author.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTag = !selectedTag || q.tags.includes(selectedTag);
     return matchesSearch && matchesTag;
   }).sort((a, b) => {
     if (viewMode === 'recent') {
-      return b.timestamp.getTime() - a.timestamp.getTime();
+      return b.createdAt.getTime() - a.createdAt.getTime();
     } else if (viewMode === 'unanswered') {
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (a.status !== 'pending' && b.status === 'pending') return 1;
-      return b.timestamp.getTime() - a.timestamp.getTime();
+      if (a.status === 'PENDING' && b.status !== 'PENDING') return -1;
+      if (a.status !== 'PENDING' && b.status === 'PENDING') return 1;
+      return b.createdAt.getTime() - a.createdAt.getTime();
     } else { // trending
-      if (b.upvotes !== a.upvotes) return b.upvotes - a.upvotes;
-      return b.timestamp.getTime() - a.timestamp.getTime();
+      if (b.upvotes !== a.upvotes) return (b.upvoteCount ?? 0) - (a.upvoteCount ?? 0);
+      return b.createdAt.getTime() - a.createdAt.getTime();
     }
   });
+
+  const checkIfUserUpvoted = (question: QuestionWithRelations) : boolean => {
+    return question.upvotes?.some(upvote => upvote.userId === currentUser?.id) ?? false;
+  }
+
+  const checkIfUserBookmarked = (question: QuestionWithRelations) : boolean => {
+    return question.bookmarks?.some(bookmark => bookmark.userId === currentUser?.id) ?? false;
+  }
 
   // Auth Page Component
   const AuthPage: React.FC = () => {
@@ -438,6 +374,8 @@ const App: React.FC = () => {
       }
 
       const newUser: User = {
+        // TODO: don't pass in here since id is auto-incremented in the DB
+        id: users.length > 0 ? Math.max(...users.map(u => u.id ?? 0)) + 1 : 1,
         email,
         password,
         name,
@@ -572,11 +510,11 @@ const App: React.FC = () => {
     const [adminView, setAdminView] = useState<AdminView>('dashboard');
     const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'answered'>('all');
     
-    const pendingQuestions = questions.filter(q => q.status === 'pending');
-    const answeredQuestions = questions.filter(q => q.status === 'answered');
+    const pendingQuestions = questions.filter(q => q.status === 'PENDING');
+    const answeredQuestions = questions.filter(q => q.status === 'ANSWERED');
     const activeUsers = users.filter(u => !u.isAdmin);
     
-    const getFilteredQuestions = (): Question[] => {
+    const getFilteredQuestions = (): QuestionWithRelations[] => {
       if (filterStatus === 'pending') return pendingQuestions;
       if (filterStatus === 'answered') return answeredQuestions;
       return questions;
@@ -633,11 +571,11 @@ const App: React.FC = () => {
                 <div>
                   <h3 className="font-semibold">{question.text}</h3>
                   <p className="text-sm text-white/60 mt-1">
-                    {question.author} • {formatTimestamp(question.timestamp)}
+                    {question.author.name} • {formatTimestamp(question.createdAt)}
                   </p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs ${
-                  question.status === 'answered' ? 'bg-green-500/20 text-green-300' :
+                  question.status === 'ANSWERED' ? 'bg-green-500/20 text-green-300' :
                   'bg-orange-500/20 text-orange-300'
                 }`}>
                   {question.status}
@@ -679,7 +617,7 @@ const App: React.FC = () => {
                 <div>
                   <h3 className="font-semibold">{question.text}</h3>
                   <p className="text-sm text-white/60 mt-1">
-                    {question.author} • {formatTimestamp(question.timestamp)}
+                    {question.author.name} • {formatTimestamp(question.createdAt)}
                   </p>
                 </div>
                 <button
@@ -689,7 +627,7 @@ const App: React.FC = () => {
                   }}
                   className="px-3 py-1 bg-blue-500/20 rounded text-sm hover:bg-blue-500/30 transition"
                 >
-                  {question.status === 'answered' ? 'View' : 'Answer'}
+                  {question.status === 'ANSWERED' ? 'View' : 'Answer'}
                 </button>
               </div>
             </div>
@@ -890,7 +828,7 @@ const App: React.FC = () => {
             <button
               onClick={() => {
                 if (questionText && selectedTags.length > 0) {
-                  handleAskQuestion({ text: questionText, description: questionDescription, tags: selectedTags });
+                  handleAskQuestion({ authorId: currentUser?.id || 0, title: questionText, description: questionDescription, tags: selectedTags });
                 }
               }}
               disabled={!questionText || selectedTags.length === 0}
@@ -927,13 +865,13 @@ const App: React.FC = () => {
           )}
           
           <div className="flex items-center gap-4 mb-6 text-white/80">
-            <span>{question.author}, {question.role}</span>
+            <span>{question.author.name}, {question.role}</span>
             <span>•</span>
-            <span>{question.timestamp.toLocaleDateString()}</span>
+            <span>{question.createdAt.toLocaleDateString()}</span>
           </div>
           
           <div className="flex gap-2 mb-8">
-            {question.tags.map(tag => (
+            {(question.tags ?? []).map(tag => (
               <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-sm">
                 {tag}
               </span>
@@ -941,14 +879,14 @@ const App: React.FC = () => {
           </div>
           
           <div className="border-t border-white/20 pt-6">
-            <h3 className="text-xl font-semibold mb-4">Answers ({question.answers.length})</h3>
+            <h3 className="text-xl font-semibold mb-4">Answers ({question.answers?.length ?? 0})</h3>
             
-            {question.answers.map(answer => (
+            {(question.answers ?? []).map(answer => (
               <div key={answer.id} className="mb-6 p-4 bg-white/5 rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
                   {answer.isAdmin && <Shield className="w-4 h-4 text-yellow-400" />}
-                  <span className="font-semibold">{answer.author}</span>
-                  <span className="text-sm text-white/60">{answer.timestamp.toLocaleDateString()}</span>
+                  <span className="font-semibold">{answer.author.name}</span>
+                  <span className="text-sm text-white/60">{answer.createdAt.toLocaleDateString()}</span>
                 </div>
                 <p className="text-white/90">{answer.content}</p>
               </div>
@@ -1155,22 +1093,23 @@ const App: React.FC = () => {
             <button
               onClick={() => {
                 if (questionText && selectedTags.length > 0) {
+                  const now = new Date();
                   const newQuestion = {
                     id: questions.length + 1,
                     text: questionText,
-                    author: currentUser?.name || 'Guest',
-                    authorEmail: currentUser?.email || 'guest@example.com',
+                    authorId: currentUser?.id || 0,
+                    author: currentUser!,
                     role: "Member",
                     tags: selectedTags,
-                    upvotes: 0,
-                    upvotedBy: [],
-                    savedBy: [],
-                    status: "pending" as const,
-                    priority: "medium" as const,
+                    upvotes: [],
+                    bookmarks: [],
+                    status: "PENDING" as const,
+                    priority: "MEDIUM" as const,
                     views: 0,
-                    assignedTo: selectedExpert.email,
+                    assignedTo: selectedExpert,
                     answers: [],
-                    timestamp: new Date()
+                    createdAt: now,
+                    updatedAt: now
                   };
                   
                   setQuestions([newQuestion, ...questions]);
@@ -1252,7 +1191,7 @@ const App: React.FC = () => {
                       Admin Panel
                     </button>
                   )}
-                  <User className="w-5 h-5" />
+                  <LucideUser className="w-5 h-5" />
                   <span>{currentUser?.name}</span>
                 </div>
                 <button onClick={() => setShowNotifications(true)} className="p-2 hover:bg-white/10 rounded-lg transition relative">
@@ -1376,7 +1315,7 @@ const App: React.FC = () => {
                   onClick={() => setViewMode('unanswered')}
                   className={`text-sm ${viewMode === 'unanswered' ? 'text-white' : 'text-white/60 hover:text-white'} transition`}
                 >
-                  Unanswered ({questions.filter(q => q.status === 'pending').length})
+                  Unanswered ({questions.filter(q => q.status === 'PENDING').length})
                 </button>
               </div>
             </div>
@@ -1411,7 +1350,7 @@ const App: React.FC = () => {
                   onClick={() => setSelectedQuestion(question)}
                 >
                   {/* Hot indicator for trending questions */}
-                  {question.upvotes > 30 && (
+                  {question.upvotes && question.upvotes.length > 30 && (
                     <div className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-full text-xs font-semibold">
                       HOT
                     </div>
@@ -1432,17 +1371,17 @@ const App: React.FC = () => {
                       
                       <div className="flex items-center gap-4 text-white/70">
                         <span className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          {question.author}, {question.role}
+                          <LucideUser className="w-4 h-4" />
+                          {question.author.name}, {question.role}
                         </span>
                         <span>•</span>
-                        <span>{formatTimestamp(question.timestamp)}</span>
+                        <span>{formatTimestamp(question.createdAt)}</span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
                           <Eye className="w-4 h-4" />
                           {question.views} views
                         </span>
-                        {question.status === 'answered' && (
+                        {question.status === 'ANSWERED' && (
                           <>
                             <span>•</span>
                             <span className="text-green-400 flex items-center gap-1">
@@ -1453,11 +1392,11 @@ const App: React.FC = () => {
                         )}
                       </div>
                       <div className="flex gap-2 mt-4">
-                        {question.tags.map(tag => (
+                        {question.tags != null ? question.tags.map(tag => (
                           <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-sm hover:bg-white/20 transition">
                             {tag}
                           </span>
-                        ))}
+                        )): null }
                       </div>
                     </div>
                     <div className="flex flex-col gap-3 ml-4">
@@ -1467,17 +1406,17 @@ const App: React.FC = () => {
                           toggleUpvote(question.id);
                         }}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                          question.upvotedBy.includes(currentUser?.email ?? '') 
+                          checkIfUserUpvoted(question) 
                             ? 'bg-blue-500/30 text-blue-300 border border-blue-400/50 scale-105' 
                             : 'bg-white/10 hover:bg-white/15 border border-white/10'
                         }`}
                       >
                         <ThumbsUp className={`w-4 h-4 transition-transform duration-300 ${
-                          question.upvotedBy.includes(currentUser?.email ?? '') 
+                          checkIfUserUpvoted(question)
                             ? 'fill-current scale-110' 
                             : 'hover:scale-110'
                         }`} />
-                        <span className="font-medium">{question.upvotes}</span>
+                        <span className="font-medium">{question.upvoteCount}</span>
                       </button>
                       <button
                         onClick={(e) => {
@@ -1485,21 +1424,21 @@ const App: React.FC = () => {
                           toggleSave(question.id);
                         }}
                         className={`p-2 rounded-lg transition-all duration-300 ${
-                          question.savedBy.includes(currentUser?.email ?? '') 
+                          checkIfUserBookmarked(question) 
                             ? 'bg-yellow-500/30 text-yellow-300 border border-yellow-400/50 scale-105' 
                             : 'bg-white/10 hover:bg-white/15 border border-white/10'
                         }`}
-                        title={question.savedBy.includes(currentUser?.email ?? '') ? 'Remove from favorites' : 'Add to favorites'}
+                        title={checkIfUserBookmarked(question) ? 'Remove from favorites' : 'Add to favorites'}
                       >
                         <Bookmark className={`w-4 h-4 transition-transform duration-300 ${
-                          question.savedBy.includes(currentUser?.email ?? '') 
+                          checkIfUserBookmarked(question) 
                             ? 'fill-current scale-110' 
                             : 'hover:scale-110'
                         }`} />
                       </button>
                     </div>
                   </div>
-                  {question.answers.length > 0 && (
+                  {(question.answers && question.answers.length > 0) && (
                     <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
                       <p className="text-sm text-white/60">
                         {question.answers.length} answer{question.answers.length > 1 ? 's' : ''}
@@ -1524,7 +1463,7 @@ const App: React.FC = () => {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-green-400">
-                    {questions.filter(q => q.status === 'answered').length}
+                    {questions.filter(q => q.status === 'ANSWERED').length}
                   </div>
                   <div className="text-white/60">Expert Answers</div>
                 </div>
