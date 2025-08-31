@@ -108,6 +108,7 @@ export interface QuestionBookmark {
 } 
 
 // Interfaces and Types for App logic
+
 export type QuestionStatus = 'PENDING' | 'ANSWERED';
 export type AnswerType = 'TEXT' | 'VIDEO' | 'AUDIO';
 
@@ -133,6 +134,16 @@ export interface AnswerData {
   isAdmin: boolean;
 }
 
+export interface CreateUpvoteInput {
+  questionId: number;
+  userId: number;
+}
+
+export interface CreateBookmarkInput {
+  questionId: number;
+  userId: number;
+}
+
 export interface UpdateAnswerInput {
   type?: AnswerType;
   content?: string;
@@ -148,4 +159,9 @@ export interface GetAnswersFilters {
   type?: AnswerType;
   limit?: number;
   offset?: number;
+}
+
+export interface UserWithRelations extends User {
+  bookmarks?: QuestionBookmark[];
+  upvotes?: QuestionUpvote[];
 }

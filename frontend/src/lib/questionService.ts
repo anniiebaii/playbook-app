@@ -1,24 +1,46 @@
+import { get } from 'http'
 import { supabase } from './supabase'
 import type { QuestionWithRelations, Question, User, Answer, QuestionUpvote, QuestionBookmark, QuestionData, AnswerWithRelations } from './supabase'
 
 export class QuestionService {
-  
+
+    /* Syntax explanation:
+        author:users!questions_authorId_fkey(*) means:
+            author: - Name this relationship "author" in the result
+            users - Join to the users table
+            !questions_authorId_fkey - Use this specific foreign key relationship
+            (*) - Get all columns from the users table
+
+        answers(
+            *, -- This automatically adds: WHERE answers.questionId = questions.id
+            author:users!answers_authorId_fkey(*)
+    */
+
+    private static readonly QUESTION_WITH_RELATIONS_QUERY = `
+            *,
+            author:users!questions_authorId_fkey(*),
+            assignedTo:users!questions_assignedToId_fkey(*),
+            answers(
+            *,
+            author:users!answers_authorId_fkey(*)
+        ),
+            upvotes:question_upvotes!question_upvotes_questionId_fkey(*),
+            bookmarks:question_bookmarks!question_bookmarks_questionId_fkey(*)
+        `
+    
+    // Main question query with relations
+    private static getQuestionWithRelationsQuery() {
+        return supabase
+            .from('questions')
+            .select(QuestionService.QUESTION_WITH_RELATIONS_QUERY)
+    }
+
   /**
    * Get a single question with all relations and computed fields
    */
   static async getQuestionWithRelations(questionId: number): Promise<QuestionWithRelations | null> {
     try {
-      // Main question query with relations
-      const { data: question, error: questionError } = await supabase
-        .from('questions')
-        .select(`
-          *,
-          author:users!questions_authorId_fkey(*),
-          assignedTo:users!questions_assignedToId_fkey(*),
-          answers(*),
-          upvotes:question_upvotes(*),
-          bookmarks:question_bookmarks(*)
-        `)
+      const { data: question, error: questionError } = await QuestionService.getQuestionWithRelationsQuery()
         .eq('id', questionId)
         .single()
 
@@ -44,6 +66,8 @@ export class QuestionService {
         bookmarkCount: question.bookmarks?.length || 0
       }
 
+      console.log('Fetched question with relations:', questionWithRelations)
+
       return questionWithRelations
 
     } catch (error) {
@@ -65,19 +89,7 @@ export class QuestionService {
     tags?: string[]
   }): Promise<QuestionWithRelations[]> {
     try {
-      let query = supabase
-        .from('questions')
-        .select(`
-          *,
-          author:users!questions_authorId_fkey(*),
-          assignedTo:users!questions_assignedToId_fkey(*),
-          answers(
-            *,
-            author:users!answers_authorId_fkey(*)
-        ),
-          upvotes:question_upvotes(*),
-          bookmarks:question_bookmarks(*)
-        `)
+      let query = QuestionService.getQuestionWithRelationsQuery()
         .order('createdAt', { ascending: false })
 
       // Apply filters
@@ -138,6 +150,8 @@ export class QuestionService {
         bookmarkCount: question.bookmarks?.length || 0
       }))
 
+     console.log('Fetched questions with relations:', questionsWithRelations)
+
       return questionsWithRelations
 
     } catch (error) {
@@ -170,46 +184,47 @@ export class QuestionService {
   /**
    * Get questions bookmarked by a specific user
    */
-  static async getUserBookmarkedQuestions(userId: number): Promise<QuestionWithRelations[]> {
-    return []
-    // try {
-    //   const { data: bookmarks, error } = await supabase
-    //     .from('question_bookmarks')
-    //     .select(`
-    //       question:questions(
-    //         *,
-    //         author:users!questions_authorId_fkey(*),
-    //         assignedTo:users!questions_assignedToId_fkey(*),
-    //         answers(*),
-    //         upvotes:question_upvotes(*),
-    //         bookmarks:question_bookmarks(*)
-    //       )
-    //     `)
-    //     .eq('userId', userId)
-    //     .order('createdAt', { ascending: false })
+  static async getUserBookmarkedQuestions(userId: number): Promise<QuestionBookmark[]> {
+    try {
+        // TODO: only get question IDs first, then get questions with relations in local cache
+      const { data: bookmarks, error } = await supabase
+        .from('question_bookmarks')
+        .select(`
+          *,
+          question:questions(
+            *,
+            author:users!questions_authorId_fkey(*),
+            assignedTo:users!questions_assignedToId_fkey(*),
+            answers(*),
+            upvotes:question_upvotes(*),
+            bookmarks:question_bookmarks(*)
+          )
+        `)
+        .eq('userId', userId)
+        .order('createdAt', { ascending: false })
 
-    //   if (error) {
-    //     console.error('Error fetching bookmarked questions:', error)
-    //     return []
-    //   }
+      if (error) {
+        console.error('Error fetching bookmarked questions:', error)
+        return []
+      }
 
-    //   const questions = bookmarks?.map(bookmark => bookmark.question).filter(Boolean) || []
+      const questions = bookmarks?.map(bookmark => bookmark.question).filter(Boolean) || []
       
-    //   return questions.map(question => ({
-    //     ...question,
-    //     author: question.author,
-    //     assignedTo: question.assignedTo || undefined,
-    //     answers: question.answers || [],
-    //     upvotes: question.upvotes || [],
-    //     bookmarks: question.bookmarks || [],
-    //     upvoteCount: question.upvotes?.length || 0,
-    //     bookmarkCount: question.bookmarks?.length || 0
-    //   }))
+      return questions.map(question => ({
+        ...question,
+        author: question.author,
+        assignedTo: question.assignedTo || undefined,
+        answers: question.answers || [],
+        upvotes: question.upvotes || [],
+        bookmarks: question.bookmarks || [],
+        upvoteCount: question.upvotes?.length || 0,
+        bookmarkCount: question.bookmarks?.length || 0
+      }))
 
-    // } catch (error) {
-    //   console.error('Error in getUserBookmarkedQuestions:', error)
-    //   return []
-    // }
+    } catch (error) {
+      console.error('Error in getUserBookmarkedQuestions:', error)
+      return []
+    }
   }
 
   /**
