@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations, CreateUpvoteInput, CreateUserInput, CreateBookmarkInput } from './lib/supabase';
+import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations, CreateUpvoteInput, CreateUserInput, CreateBookmarkInput, UserWithRelations } from './lib/supabase';
 import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User as LucideUser, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
 import { api } from './lib/api';
 import { QuestionService } from './lib/questionService';
@@ -7,17 +7,18 @@ import { AnswerService } from './lib/answerService';
 import { UpvoteService } from './lib/upvoteService';
 import { UserService } from './lib/userService';
 import { BookmarkService } from './lib/bookmarkService';
-import { get } from 'http';
+
+import AuthPage from './components/AuthPage';
+
 
 // Types and Interfaces
 type ViewMode = 'trending' | 'recent' | 'unanswered';
-type AuthMode = 'signin' | 'signup';
+export type AuthMode = 'signin' | 'signup';
 type AdminView = 'dashboard' | 'questions' | 'users';
 
 const App: React.FC = () => {
-  // TODO: implement real authentication and user management
-  // Initialize users with defaults
-  const getInitialUsers = (): User[] => {
+  // Dummy User data
+  const getDummyUsers = (): User[] => {
     return [
       // { 
       //   id: "550e8400-e29b-41d4-a716-446655440000",
@@ -79,21 +80,20 @@ const App: React.FC = () => {
 
   // Dummy questions
   const getDummyQuestions = (): QuestionWithRelations[] => {
-
     return [
     ];
   };
 
   // React Hooks and States with proper typing
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showAuthPage, setShowAuthPage] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [isAdminView, setIsAdminView] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>('trending');
 
   /* App Object States */
-  const [users, setUsers] = useState<User[]>(getInitialUsers());
+  const [users, setUsers] = useState<UserWithRelations[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [upvotes, setUpvotes] = useState<QuestionUpvote[]>(getUpvotes());
   const [bookmarks, setBookmarks] = useState<QuestionBookmark[]>(getBookmarks());
   const [questions, setQuestions] = useState<QuestionWithRelations[]>(getDummyQuestions());
@@ -106,6 +106,7 @@ const App: React.FC = () => {
   /* Answer States */
   const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'TEXT', content: '' });
 
+  /* Notification States */
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
 
   /* Expert User States */
@@ -132,8 +133,21 @@ const App: React.FC = () => {
     fetchQuestions();
   }, []);  
 
+  // Fetch users asynchronously after component mounts
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const usersData = await UserService.getAllUsers();
+        if (usersData) setUsers(usersData);
+      } catch (err) {
+        console.error('Failed to fetch users:', err);
+      }
+    };
 
-  const [lastVoteTime, setLastVoteTime] = useState(0);
+    fetchUsers();
+  }, []);
+
+  // TODO: handle notifications
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: 1,
@@ -147,6 +161,7 @@ const App: React.FC = () => {
     }
   ]);
 
+  // TODO: handle tags
   const tags: string[] = ["Objections", "Recruiting", "Daily Routines", "Team Management", "Sales", "Skills", "Leadership"];
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
@@ -250,8 +265,11 @@ const App: React.FC = () => {
   const [error, setError] = useState<string>('');
 
   const handleSignIn = async (email: string, password: string) => {
-      //const user = users.find(u => u.email === email && u.password === password);
       const user = await UserService.signIn(email, password)
+
+      // TODO: handle signin error states
+        // invalid email/password
+        // user with email does not exist
 
       if (user) {
         setIsAuthenticated(true);
@@ -272,11 +290,6 @@ const App: React.FC = () => {
       setError('Please fill in all fields');
       return;
     }
-    
-    if (users.find(u => u.email === email)) {
-      setError('Email already exists');
-      return;
-    }
 
     const newUserInput: CreateUserInput = {
       email,
@@ -286,12 +299,16 @@ const App: React.FC = () => {
     };
 
     const newUser = await UserService.signUp(newUserInput);
+
+    // TODO: handle signup errors
+      // email already exists state
+
     if (!newUser) {
       setError('Error signing up. Please try again.');
       return;
     }
     
-    const updatedUsers = [...users, newUser];
+    // const updatedUsers = [...users, newUser];
     //setUsers(updatedUsers);
     setIsAuthenticated(true);
     setCurrentUser(newUser);
@@ -443,128 +460,6 @@ const App: React.FC = () => {
   const checkIfUserBookmarked = (question: QuestionWithRelations) : boolean => {
     return question.bookmarks?.some(bookmark => bookmark.userId === currentUser?.id) ?? false;
   }
-
-  // Auth Page Component
-  const AuthPage: React.FC = () => {
-    const [email, setEmail] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
-    const [name, setName] = useState<string>('');
-    const [showPassword, setShowPassword] = useState<boolean>(false);
-    
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-800 to-purple-700 text-white flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold mb-2">Lynk</h1>
-            <p className="text-white/70">The Business Leadership Knowledge Base</p>
-          </div>
-          
-          <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl border border-white/20">
-            <div className="flex mb-8">
-              <button
-                onClick={() => {
-                  setAuthMode('signin');
-                  setError('');
-                }}
-                className={`flex-1 py-3 rounded-l-lg font-semibold transition ${
-                  authMode === 'signin' ? 'bg-white/20' : 'bg-white/5 hover:bg-white/10'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => {
-                  setAuthMode('signup');
-                  setError('');
-                }}
-                className={`flex-1 py-3 rounded-r-lg font-semibold transition ${
-                  authMode === 'signup' ? 'bg-white/20' : 'bg-white/5 hover:bg-white/10'
-                }`}
-              >
-                Sign Up
-              </button>
-            </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
-                {error}
-              </div>
-            )}
-
-            {authMode === 'signup' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
-                  className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60"
-                />
-              </div>
-            )}
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60"
-              />
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full p-3 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                authMode === 'signin' ? handleSignIn(email, password) : handleSignUp(email, password, name)
-              }}
-              className="w-full py-3 bg-white/20 rounded-lg font-semibold hover:bg-white/30 transition"
-            >
-              {authMode === 'signin' ? 'Sign In' : 'Create Account'}
-            </button>
-
-            {authMode === 'signin' && (
-              <div className="mt-6 text-center text-sm">
-                <p className="text-white/60">Demo credentials:</p>
-                <p className="text-white/80">admin@leaderlink.com / admin123 (Stacey Santos)</p>
-                <p className="text-white/80">sarah.expert@leaderlink.com / expert123 (Richard Anderson)</p>
-                <p className="text-white/80">demo@example.com / demo123</p>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => setShowAuthPage(false)}
-            className="mt-6 w-full py-3 text-white/70 hover:text-white transition"
-          >
-            Continue as Guest
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   // Admin Panel Component
   const AdminPanel: React.FC = () => {
@@ -1218,7 +1113,15 @@ const App: React.FC = () => {
 
   // Show auth page
   if (showAuthPage) {
-    return <AuthPage />;
+    return <AuthPage
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        handleSignIn={handleSignIn}
+        handleSignUp={handleSignUp}
+        error={error}
+        setError={setError}
+        setShowAuthPage={setShowAuthPage}
+      />;
   }
 
   // Show admin panel
