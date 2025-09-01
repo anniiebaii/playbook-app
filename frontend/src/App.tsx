@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations, CreateUpvoteInput } from './lib/supabase';
+import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations, CreateUpvoteInput, CreateUserInput, CreateBookmarkInput } from './lib/supabase';
 import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User as LucideUser, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
 import { api } from './lib/api';
 import { QuestionService } from './lib/questionService';
@@ -19,50 +19,50 @@ const App: React.FC = () => {
   // Initialize users with defaults
   const getInitialUsers = (): User[] => {
     return [
-      { 
-        id: 11,
-        email: 'admin@leaderlink.com', 
-        password: 'admin123', 
-        name: 'Stacey Santos', 
-        isAdmin: true, 
-        joinDate: new Date('2025-01-01'), 
-        status: 'active',
-        title: 'Frontier',
-        expertise: ['Sales Strategy', 'Team Management', 'Enterprise Sales'],
-        bio: 'Over 20 years of experience building and scaling high-performance sales teams.',
-        answersCount: 156,
-        rating: 4.9,
-        responseTime: '< 2 hours',
-        avatar: 'SS',
-        points: 15600
-      },
-      { 
-        id: 22,
-        email: 'sarah.expert@leaderlink.com', 
-        password: 'expert123', 
-        name: 'Richard Anderson', 
-        isAdmin: true, 
-        joinDate: new Date('2025-01-15'), 
-        status: 'active',
-        title: 'Frontier',
-        expertise: ['Cold Calling', 'Objection Handling', 'Sales Training'],
-        bio: 'Certified sales trainer with 15+ years helping teams exceed quotas.',
-        answersCount: 89,
-        rating: 4.8,
-        responseTime: '< 4 hours',
-        avatar: 'RA',
-        points: 8900
-      },
-      { 
-        id: 33,
-        email: 'demo@example.com', 
-        password: 'demo123', 
-        name: 'Demo User', 
-        isAdmin: false, 
-        joinDate: new Date('2025-03-15'), 
-        status: 'active',
-        points: 450
-      }
+      // { 
+      //   id: "550e8400-e29b-41d4-a716-446655440000",
+      //   email: 'admin@leaderlink.com', 
+      //   password: 'admin123', 
+      //   name: 'Stacey Santos', 
+      //   isAdmin: true, 
+      //   joinDate: new Date('2025-01-01'), 
+      //   status: 'active',
+      //   title: 'Frontier',
+      //   expertise: ['Sales Strategy', 'Team Management', 'Enterprise Sales'],
+      //   bio: 'Over 20 years of experience building and scaling high-performance sales teams.',
+      //   answersCount: 156,
+      //   rating: 4.9,
+      //   responseTime: '< 2 hours',
+      //   avatar: 'SS',
+      //   points: 15600
+      // },
+      // { 
+      //   id: "550e8400-e29b-41d4-a716-446655440001",
+      //   email: 'sarah.expert@leaderlink.com', 
+      //   password: 'expert123', 
+      //   name: 'Richard Anderson', 
+      //   isAdmin: true, 
+      //   joinDate: new Date('2025-01-15'), 
+      //   status: 'active',
+      //   title: 'Frontier',
+      //   expertise: ['Cold Calling', 'Objection Handling', 'Sales Training'],
+      //   bio: 'Certified sales trainer with 15+ years helping teams exceed quotas.',
+      //   answersCount: 89,
+      //   rating: 4.8,
+      //   responseTime: '< 4 hours',
+      //   avatar: 'RA',
+      //   points: 8900
+      // },
+      // { 
+      //   id: "550e8400-e29b-41d4-a716-446655440002",
+      //   email: 'demo@example.com', 
+      //   password: 'demo123', 
+      //   name: 'Demo User', 
+      //   isAdmin: false, 
+      //   joinDate: new Date('2025-03-15'), 
+      //   status: 'active',
+      //   points: 450
+      // }
     ];
   };
 
@@ -179,7 +179,7 @@ const App: React.FC = () => {
       text: questionData.title,
       description: questionData.description || '',
       author: currentUser!,
-      authorId: currentUser?.id || 0,
+      authorId: currentUser?.id || "0",
       role: "Member",
       tags: questionData.tags,
       upvotes: [],
@@ -247,6 +247,58 @@ const App: React.FC = () => {
     setNewAnswer({ type: 'TEXT', content: '' });
   };
 
+  const [error, setError] = useState<string>('');
+
+  const handleSignIn = async (email: string, password: string) => {
+      //const user = users.find(u => u.email === email && u.password === password);
+      const user = await UserService.signIn(email, password)
+
+      if (user) {
+        setIsAuthenticated(true);
+        setCurrentUser(user);
+        setShowAuthPage(false);
+        setError('');
+        
+        if (user.isAdmin) {
+          setIsAdminView(true);
+        }
+      } else {
+        setError('Invalid email or password');
+      }
+    };
+
+  const handleSignUp = async (email: string, password: string, name: string) => {
+    if (!email || !password || !name) {
+      setError('Please fill in all fields');
+      return;
+    }
+    
+    if (users.find(u => u.email === email)) {
+      setError('Email already exists');
+      return;
+    }
+
+    const newUserInput: CreateUserInput = {
+      email,
+      password,
+      name,
+      isAdmin: false
+    };
+
+    const newUser = await UserService.signUp(newUserInput);
+    if (!newUser) {
+      setError('Error signing up. Please try again.');
+      return;
+    }
+    
+    const updatedUsers = [...users, newUser];
+    //setUsers(updatedUsers);
+    setIsAuthenticated(true);
+    setCurrentUser(newUser);
+    setShowAuthPage(false);
+    setError('');
+  };
+
   const getQuestionById = (id: number): QuestionWithRelations | undefined => {
     return questions.find(q => q.id === id);
   }
@@ -269,11 +321,10 @@ const App: React.FC = () => {
 
     const isUpvoted = checkIfUserUpvoted(questions.find(q => q.id === questionId)!);
 
-    let newUpvote: QuestionUpvote = {
-      id: newUpvotes.length > 0 ? Math.max(...newUpvotes.map(u => u.id)) + 1 : 1, // Temporary ID; will be replaced by DB ID
+    let newUpvote: CreateUpvoteInput = {
+      //id: newUpvotes.length > 0 ? Math.max(...newUpvotes.map(u => u.id)) + 1 : 1, // Temporary ID; will be replaced by DB ID
       questionId: questionId,
-      userId: currentUser!.id,
-      createdAt: now,
+      userId: currentUser!.id
     }; 
 
     if (isUpvoted) {
@@ -285,8 +336,7 @@ const App: React.FC = () => {
     } else {
       // Add upvote
       const insertedUpvote = await UpvoteService.create(newUpvote);
-      newUpvote.id = insertedUpvote.id; // Get actual ID from DB and replace temporary ID
-      newUpvotes.push(newUpvote);
+      newUpvotes.push(insertedUpvote);
     }
     
     // Update upvote states
@@ -320,11 +370,9 @@ const App: React.FC = () => {
 
     const isSaved = checkIfUserBookmarked(question);
 
-    let newBookmark: QuestionBookmark = {
-      id: newBookmarks.length > 0 ? Math.max(...newBookmarks.map(u => u.id)) + 1 : 1, // Temporary ID; will be replaced by DB ID
+    let newBookmark: CreateBookmarkInput = {
       questionId: questionId,
-      userId: currentUser!.id,
-      createdAt: now,
+      userId: currentUser!.id
     }; 
 
     if (isSaved) {
@@ -336,8 +384,7 @@ const App: React.FC = () => {
     } else {
       // Add bookmark
       const insertedBookmark = await BookmarkService.create(newBookmark);
-      newBookmark.id = insertedBookmark.id; // Get actual ID from DB and replace temporary ID
-      newBookmarks.push(newBookmark);
+      newBookmarks.push(insertedBookmark);
     }
     
     // Update Bookmark states
@@ -403,54 +450,7 @@ const App: React.FC = () => {
     const [password, setPassword] = useState<string>('');
     const [name, setName] = useState<string>('');
     const [showPassword, setShowPassword] = useState<boolean>(false);
-    const [error, setError] = useState<string>('');
-
-    const handleSignIn = (): void => {
-      const user = users.find(u => u.email === email && u.password === password);
-      if (user) {
-        setIsAuthenticated(true);
-        setCurrentUser(user);
-        setShowAuthPage(false);
-        setError('');
-        
-        if (user.isAdmin) {
-          setIsAdminView(true);
-        }
-      } else {
-        setError('Invalid email or password');
-      }
-    };
-
-    const handleSignUp = (): void => {
-      if (!email || !password || !name) {
-        setError('Please fill in all fields');
-        return;
-      }
-      
-      if (users.find(u => u.email === email)) {
-        setError('Email already exists');
-        return;
-      }
-
-      const newUser: User = {
-        // TODO: don't pass in here since id is auto-incremented in the DB
-        id: users.length > 0 ? Math.max(...users.map(u => u.id ?? 0)) + 1 : 1,
-        email,
-        password,
-        name,
-        isAdmin: false,
-        joinDate: new Date(),
-        status: 'active',
-        points: 0
-      };
-      
-      const updatedUsers = [...users, newUser];
-      setUsers(updatedUsers);
-      setIsAuthenticated(true);
-      setCurrentUser(newUser);
-      setShowAuthPage(false);
-      setError('');
-    };
+    
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-800 to-purple-700 text-white flex items-center justify-center p-4">
@@ -537,7 +537,9 @@ const App: React.FC = () => {
             </div>
 
             <button
-              onClick={authMode === 'signin' ? handleSignIn : handleSignUp}
+              onClick={() => {
+                authMode === 'signin' ? handleSignIn(email, password) : handleSignUp(email, password, name)
+              }}
               className="w-full py-3 bg-white/20 rounded-lg font-semibold hover:bg-white/30 transition"
             >
               {authMode === 'signin' ? 'Sign In' : 'Create Account'}
@@ -887,7 +889,7 @@ const App: React.FC = () => {
             <button
               onClick={() => {
                 if (questionText && selectedTags.length > 0) {
-                  handleAskQuestion({ authorId: currentUser?.id || 0, title: questionText, description: questionDescription, tags: selectedTags });
+                  handleAskQuestion({ authorId: currentUser?.id || "0", title: questionText, description: questionDescription, tags: selectedTags });
                 }
               }}
               disabled={!questionText || selectedTags.length === 0}
@@ -1164,7 +1166,7 @@ const App: React.FC = () => {
                   const newQuestion = {
                     id: questions.length + 1,
                     text: questionText,
-                    authorId: currentUser?.id || 0,
+                    authorId: currentUser?.id || "0",
                     author: currentUser!,
                     role: "Member",
                     tags: selectedTags,

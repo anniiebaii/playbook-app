@@ -13,7 +13,7 @@ export class BookmarkService {
         if (error) throw error
     }
 
-    static async deleteByQuestionAndUser(questionId: number, userId: number): Promise<void> {
+    static async deleteByQuestionAndUser(questionId: number, userId: string): Promise<void> {
         console.log('Deleting bookmark for question ID:', questionId, 'and user ID:', userId);
         const { error } = await supabase
             .from('question_bookmarks')
@@ -51,7 +51,7 @@ export class BookmarkService {
         return data as QuestionBookmark[]
     }
 
-    static async getByUser(userId: number): Promise<QuestionBookmark[]> {
+    static async getByUser(userId: string): Promise<QuestionBookmark[]> {
         const { data, error } = await supabase
             .from('question_bookmarks')
             .select('*')
