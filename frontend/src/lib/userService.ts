@@ -143,4 +143,41 @@ export class UserService {
       return null
     }
   }
+
+  static async getAllUsers(): Promise<UserWithRelations[] | null> {
+    try {
+      const { data: users, error: userError } = await supabase
+        .from('users')
+        .select(`
+          *,
+          bookmarks:question_bookmarks!question_bookmarks_userId_fkey(*),
+          upvotes:question_upvotes!question_upvotes_userId_fkey(*)
+        `)
+        .order('createdAt')
+
+      if (userError) {
+        console.error('Error fetching users:', userError)
+        return null
+      }
+
+      if (!users) return null
+
+
+      // Transform each question to include computed fields
+      const usersWithRelations: UserWithRelations[] = (users || []).map(user => (
+        {
+        ...user,
+        bookmarks: user.bookmarks || [],
+        upvotes: user.upvotes || []
+      }))
+      
+      console.log('Fetched user by email with relations:', usersWithRelations)
+
+      return usersWithRelations
+
+    } catch (error) {
+      console.log('Error in getAllUsers:', error)
+      return null
+    }
+  }
 }
