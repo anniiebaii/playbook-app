@@ -15,7 +15,7 @@ import { Utils } from './lib/utils';
 // Components
 import AuthPage from './components/AuthPage';
 import NotificationsModal from './components/NotificationsModal';
-import AskQuestionModal from './components/AskQuestionModal'; 
+import AskQuestionModal from './components/AskQuestionModal';
 import { ExpertsModal, ExpertProfileModal } from './components/ExpertsModal';
 import AskExpertModal from './components/AskExpertModal';
 import LoadingQuestionsSpinner from './components/LoadingQuestionsSpinner';
@@ -81,7 +81,7 @@ const App: React.FC = () => {
     return [];
   }
 
-  const getBookmarks = (): QuestionBookmark[] => {  
+  const getBookmarks = (): QuestionBookmark[] => {
     // TODO: implement fetching bookmarks from DB logic
     return [];
   }
@@ -126,21 +126,21 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const fetchQuestions = async () => {
-     try {
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 seconds delay
+      try {
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 seconds delay
 
-      const data = await QuestionService.getQuestionsWithRelations();
-      setQuestions(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingQuestions(false);
-    }
+        const data = await QuestionService.getQuestionsWithRelations();
+        setQuestions(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingQuestions(false);
+      }
     };
-    
+
     fetchQuestions();
-  }, []);  
+  }, []);
 
   // Fetch users asynchronously after component mounts
   useEffect(() => {
@@ -207,9 +207,9 @@ const App: React.FC = () => {
     setShowAskQuestion(false);
   };
 
-    const handleAddAnswer = async (content: string, type: Answer["type"]) => {
+  const handleAddAnswer = async (content: string, type: Answer["type"]) => {
     if (!selectedQuestion || !currentUser?.isAdmin || !content) return;
-    
+
     let answer: AnswerWithRelations = {
       id: (selectedQuestion.answers?.length ?? 0) + 1,
       type: type,
@@ -236,18 +236,18 @@ const App: React.FC = () => {
 
     // Update question's status
     QuestionService.update(selectedQuestion.id, { status: 'ANSWERED' });
-    
-    setQuestions(questions.map(q => 
-      q.id === selectedQuestion.id 
+
+    setQuestions(questions.map(q =>
+      q.id === selectedQuestion.id
         ? { ...q, answers: [...(q.answers ?? []), answer], status: 'ANSWERED' as const }
         : q
     ));
-    
+
     const updatedQuestion: Question = {
       ...selectedQuestion,
       status: 'ANSWERED'
     };
-    
+
     setSelectedQuestion({
       ...selectedQuestion,
       answers: [...(selectedQuestion.answers ?? []), answer],
@@ -259,25 +259,25 @@ const App: React.FC = () => {
   const [error, setError] = useState<string>('');
 
   const handleSignIn = async (email: string, password: string) => {
-      const user = await UserService.signIn(email, password)
+    const user = await UserService.signIn(email, password)
 
-      // TODO: handle signin error states
-        // invalid email/password
-        // user with email does not exist
+    // TODO: handle signin error states
+    // invalid email/password
+    // user with email does not exist
 
-      if (user) {
-        setIsAuthenticated(true);
-        setCurrentUser(user);
-        setShowAuthPage(false);
-        setError('');
-        
-        if (user.isAdmin) {
-          setIsAdminView(true);
-        }
-      } else {
-        setError('Invalid email or password');
+    if (user) {
+      setIsAuthenticated(true);
+      setCurrentUser(user);
+      setShowAuthPage(false);
+      setError('');
+
+      if (user.isAdmin) {
+        setIsAdminView(true);
       }
-    };
+    } else {
+      setError('Invalid email or password');
+    }
+  };
 
   const handleSignUp = async (email: string, password: string, name: string) => {
     if (!email || !password || !name) {
@@ -295,13 +295,13 @@ const App: React.FC = () => {
     const newUser = await UserService.signUp(newUserInput);
 
     // TODO: handle signup errors
-      // email already exists state
+    // email already exists state
 
     if (!newUser) {
       setError('Error signing up. Please try again.');
       return;
     }
-    
+
     // const updatedUsers = [...users, newUser];
     //setUsers(updatedUsers);
     setIsAuthenticated(true);
@@ -336,7 +336,7 @@ const App: React.FC = () => {
       //id: newUpvotes.length > 0 ? Math.max(...newUpvotes.map(u => u.id)) + 1 : 1, // Temporary ID; will be replaced by DB ID
       questionId: questionId,
       userId: currentUser!.id
-    }; 
+    };
 
     if (isUpvoted) {
       // Remove upvote
@@ -349,7 +349,7 @@ const App: React.FC = () => {
       const insertedUpvote = await UpvoteService.create(newUpvote);
       newUpvotes.push(insertedUpvote);
     }
-    
+
     // Update upvote states
     setQuestions(questions.map(q => {
       if (q.id === questionId) {
@@ -368,7 +368,7 @@ const App: React.FC = () => {
       setShowAuthPage(true);
       return;
     }
-    
+
     const question = getQuestionById(questionId);
 
     if (!question) {
@@ -384,7 +384,7 @@ const App: React.FC = () => {
     let newBookmark: CreateBookmarkInput = {
       questionId: questionId,
       userId: currentUser!.id
-    }; 
+    };
 
     if (isSaved) {
       // Remove bookmark
@@ -397,7 +397,7 @@ const App: React.FC = () => {
       const insertedBookmark = await BookmarkService.create(newBookmark);
       newBookmarks.push(insertedBookmark);
     }
-    
+
     // Update Bookmark states
     setQuestions(questions.map(q => {
       if (q.id === questionId) {
@@ -410,26 +410,26 @@ const App: React.FC = () => {
       return q;
     }));
   };
-  
+
   const sortQuestions = (questionsToSort: QuestionWithRelations[]): QuestionWithRelations[] => {
-     return [...questionsToSort].sort((a, b) => {
-    if (viewMode === 'recent') {
-      return b.createdAt.getTime() - a.createdAt.getTime();
-    } else if (viewMode === 'unanswered') {
-      if (a.status === 'PENDING' && b.status !== 'PENDING') return -1;
-      if (a.status !== 'PENDING' && b.status === 'PENDING') return 1;
-      return b.createdAt.getTime() - a.createdAt.getTime();
-    } else { // trending
-      //Compare upvoteCount directly, not upvotes arrays
-      const aUpvoteCount = a.upvoteCount ?? a.upvotes?.length ?? 0;
-      const bUpvoteCount = b.upvoteCount ?? b.upvotes?.length ?? 0;
-      
-      if (bUpvoteCount !== aUpvoteCount) {
-        return bUpvoteCount - aUpvoteCount;
+    return [...questionsToSort].sort((a, b) => {
+      if (viewMode === 'recent') {
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      } else if (viewMode === 'unanswered') {
+        if (a.status === 'PENDING' && b.status !== 'PENDING') return -1;
+        if (a.status !== 'PENDING' && b.status === 'PENDING') return 1;
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      } else { // trending
+        //Compare upvoteCount directly, not upvotes arrays
+        const aUpvoteCount = a.upvoteCount ?? a.upvotes?.length ?? 0;
+        const bUpvoteCount = b.upvoteCount ?? b.upvotes?.length ?? 0;
+
+        if (bUpvoteCount !== aUpvoteCount) {
+          return bUpvoteCount - aUpvoteCount;
+        }
+        return b.createdAt.getTime() - a.createdAt.getTime();
       }
-      return b.createdAt.getTime() - a.createdAt.getTime();
-    }
-  })
+    })
   }
 
   // Only sort when loading data initially
@@ -442,16 +442,16 @@ const App: React.FC = () => {
 
   const filteredQuestions = questions.filter(q => {
     const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         q.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+      q.author.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTag = !selectedTag || q.tags.includes(selectedTag);
     return matchesSearch && matchesTag;
   });
 
-  const checkIfUserUpvoted = (question: QuestionWithRelations) : boolean => {
+  const checkIfUserUpvoted = (question: QuestionWithRelations): boolean => {
     return question.upvotes?.some(upvote => upvote.userId === currentUser?.id) ?? false;
   }
 
-  const checkIfUserBookmarked = (question: QuestionWithRelations) : boolean => {
+  const checkIfUserBookmarked = (question: QuestionWithRelations): boolean => {
     return question.bookmarks?.some(bookmark => bookmark.userId === currentUser?.id) ?? false;
   }
 
@@ -459,21 +459,21 @@ const App: React.FC = () => {
   const AdminPanel: React.FC = () => {
     const [adminView, setAdminView] = useState<AdminView>('dashboard');
     const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'answered'>('all');
-    
+
     const pendingQuestions = questions.filter(q => q.status === 'PENDING');
     const answeredQuestions = questions.filter(q => q.status === 'ANSWERED');
     const activeUsers = users.filter(u => !u.isAdmin);
-    
+
     const getFilteredQuestions = (): QuestionWithRelations[] => {
       if (filterStatus === 'pending') return pendingQuestions;
       if (filterStatus === 'answered') return answeredQuestions;
       return questions;
     };
-    
+
     const DashboardView: React.FC = () => (
       <>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div 
+          <div
             onClick={() => setAdminView('questions')}
             className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-xl rounded-xl p-6 border border-blue-500/20 cursor-pointer hover:scale-105 transition-transform"
           >
@@ -482,8 +482,8 @@ const App: React.FC = () => {
             <p className="text-white/60">Total Questions</p>
             <p className="text-sm text-blue-400 mt-2">Click to view all →</p>
           </div>
-          
-          <div 
+
+          <div
             onClick={() => {
               setAdminView('questions');
               setFilterStatus('pending');
@@ -495,8 +495,8 @@ const App: React.FC = () => {
             <p className="text-white/60">Pending Questions</p>
             <p className="text-sm text-orange-400 mt-2">Click to view →</p>
           </div>
-          
-          <div 
+
+          <div
             onClick={() => setAdminView('users')}
             className="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-xl rounded-xl p-6 border border-green-500/20 cursor-pointer hover:scale-105 transition-transform"
           >
@@ -505,7 +505,7 @@ const App: React.FC = () => {
             <p className="text-white/60">Active Users</p>
             <p className="text-sm text-green-400 mt-2">Click to manage →</p>
           </div>
-          
+
           <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
             <BarChart3 className="w-8 h-8 text-purple-400 mb-4" />
             <h3 className="text-3xl font-bold">{questions.reduce((acc, q) => acc + q.views, 0)}</h3>
@@ -524,10 +524,9 @@ const App: React.FC = () => {
                     {question.author.name} • {Utils.formatTimestamp(question.createdAt)}
                   </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs ${
-                  question.status === 'ANSWERED' ? 'bg-green-500/20 text-green-300' :
-                  'bg-orange-500/20 text-orange-300'
-                }`}>
+                <span className={`px-3 py-1 rounded-full text-xs ${question.status === 'ANSWERED' ? 'bg-green-500/20 text-green-300' :
+                    'bg-orange-500/20 text-orange-300'
+                  }`}>
                   {question.status}
                 </span>
               </div>
@@ -536,7 +535,7 @@ const App: React.FC = () => {
         </div>
       </>
     );
-    
+
     const QuestionsView: React.FC = () => (
       <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/10">
         <div className="flex justify-between items-center mb-6">
@@ -559,7 +558,7 @@ const App: React.FC = () => {
             </select>
           </div>
         </div>
-        
+
         <div className="space-y-4">
           {getFilteredQuestions().map(question => (
             <div key={question.id} className="p-4 bg-white/5 rounded-lg">
@@ -585,7 +584,7 @@ const App: React.FC = () => {
         </div>
       </div>
     );
-    
+
     const UsersView: React.FC = () => (
       <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/10">
         <div className="flex justify-between items-center mb-6">
@@ -597,7 +596,7 @@ const App: React.FC = () => {
             ← Back to Dashboard
           </button>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -628,14 +627,14 @@ const App: React.FC = () => {
                       Active
                     </span>
                   </td>
-                  </tr>
+                </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
     );
-    
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
         <header className="bg-black/20 backdrop-blur-xl border-b border-white/10">
@@ -648,25 +647,22 @@ const App: React.FC = () => {
               <nav className="flex gap-2">
                 <button
                   onClick={() => setAdminView('dashboard')}
-                  className={`px-3 py-1 rounded-lg transition ${
-                    adminView === 'dashboard' ? 'bg-white/20' : 'hover:bg-white/10'
-                  }`}
+                  className={`px-3 py-1 rounded-lg transition ${adminView === 'dashboard' ? 'bg-white/20' : 'hover:bg-white/10'
+                    }`}
                 >
                   Overview
                 </button>
                 <button
                   onClick={() => setAdminView('questions')}
-                  className={`px-3 py-1 rounded-lg transition ${
-                    adminView === 'questions' ? 'bg-white/20' : 'hover:bg-white/10'
-                  }`}
+                  className={`px-3 py-1 rounded-lg transition ${adminView === 'questions' ? 'bg-white/20' : 'hover:bg-white/10'
+                    }`}
                 >
                   Questions
                 </button>
                 <button
                   onClick={() => setAdminView('users')}
-                  className={`px-3 py-1 rounded-lg transition ${
-                    adminView === 'users' ? 'bg-white/20' : 'hover:bg-white/10'
-                  }`}
+                  className={`px-3 py-1 rounded-lg transition ${adminView === 'users' ? 'bg-white/20' : 'hover:bg-white/10'
+                    }`}
                 >
                   Users
                 </button>
@@ -696,14 +692,14 @@ const App: React.FC = () => {
   };
 
   // Modals
-  
+
 
   const QuestionDetailModal = () => {
     // Define our React Hook for managing the answer text state
     const [answerText, setAnswerText] = useState("");
 
     if (!selectedQuestion) return null;
-    
+
     const question = questions.find(q => q.id === selectedQuestion.id) || selectedQuestion;
 
     return (
@@ -717,17 +713,17 @@ const App: React.FC = () => {
               <X className="w-6 h-6" />
             </button>
           </div>
-          
+
           {question.description && (
             <p className="text-white/80 mb-6">{question.description}</p>
           )}
-          
+
           <div className="flex items-center gap-4 mb-6 text-white/80">
             <span>{question.author.name}, {question.role}</span>
             <span>•</span>
             <span>{question.createdAt.toLocaleDateString()}</span>
           </div>
-          
+
           <div className="flex gap-2 mb-8">
             {(question.tags ?? []).map(tag => (
               <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-sm">
@@ -735,10 +731,10 @@ const App: React.FC = () => {
               </span>
             ))}
           </div>
-          
+
           <div className="border-t border-white/20 pt-6">
             <h3 className="text-xl font-semibold mb-4">Answers ({question.answers?.length ?? 0})</h3>
-            
+
             {(question.answers ?? []).map(answer => (
               <div key={answer.id} className="mb-6 p-4 bg-white/5 rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
@@ -749,7 +745,7 @@ const App: React.FC = () => {
                 <p className="text-white/90">{answer.content}</p>
               </div>
             ))}
-            
+
             {currentUser?.isAdmin && (
               <div className="mt-6 p-4 bg-white/5 rounded-lg">
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
@@ -783,14 +779,14 @@ const App: React.FC = () => {
   // Show auth page
   if (showAuthPage) {
     return <AuthPage
-        authMode={authMode}
-        setAuthMode={setAuthMode}
-        handleSignIn={handleSignIn}
-        handleSignUp={handleSignUp}
-        error={error}
-        setError={setError}
-        setShowAuthPage={setShowAuthPage}
-      />;
+      authMode={authMode}
+      setAuthMode={setAuthMode}
+      handleSignIn={handleSignIn}
+      handleSignUp={handleSignUp}
+      error={error}
+      setError={setError}
+      setShowAuthPage={setShowAuthPage}
+    />;
   }
 
   // Show admin panel
@@ -882,13 +878,12 @@ const App: React.FC = () => {
               </button>
             )}
           </div>
-          
+
           <div className="flex gap-4 justify-center flex-wrap mb-6">
             <button
               onClick={() => setSelectedTag('')}
-              className={`px-6 py-3 rounded-full border-2 transition ${
-                !selectedTag ? 'bg-white/20 border-white/40' : 'bg-white/10 border-white/20 hover:bg-white/15'
-              }`}
+              className={`px-6 py-3 rounded-full border-2 transition ${!selectedTag ? 'bg-white/20 border-white/40' : 'bg-white/10 border-white/20 hover:bg-white/15'
+                }`}
             >
               All Topics
             </button>
@@ -896,9 +891,8 @@ const App: React.FC = () => {
               <button
                 key={tag}
                 onClick={() => setSelectedTag(tag)}
-                className={`px-6 py-3 rounded-full border-2 transition ${
-                  selectedTag === tag ? 'bg-white/20 border-white/40' : 'bg-white/10 border-white/20 hover:bg-white/15'
-                }`}
+                className={`px-6 py-3 rounded-full border-2 transition ${selectedTag === tag ? 'bg-white/20 border-white/40' : 'bg-white/10 border-white/20 hover:bg-white/15'
+                  }`}
               >
                 {tag}
               </button>
@@ -917,7 +911,7 @@ const App: React.FC = () => {
               <ChevronDown className="w-4 h-4" />
             </button>
           </div>
-          
+
           <div className="flex justify-center gap-4 flex-wrap">
             <button
               onClick={() => setShowExperts(true)}
@@ -927,7 +921,7 @@ const App: React.FC = () => {
               <span className="font-semibold">Meet Our Expert Advisors</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
             </button>
-            
+
             {!isAuthenticated && (
               <button
                 onClick={() => setShowAuthPage(true)}
@@ -979,8 +973,8 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          { loadingQuestions ? <LoadingQuestionsSpinner/> : null }
-          { !loadingQuestions && filteredQuestions.length === 0 ? (
+          {loadingQuestions ? <LoadingQuestionsSpinner /> : null}
+          {!loadingQuestions && filteredQuestions.length === 0 ? (
             <div className="text-center py-16">
               <HelpCircle className="w-16 h-16 text-white/30 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No questions found</h3>
@@ -1006,20 +1000,20 @@ const App: React.FC = () => {
                       HOT
                     </div>
                   )}
-                  
+
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="text-2xl font-semibold mb-3 group-hover:text-white/90 transition">
                         {question.text}
                       </h3>
-                      
+
                       {/* Question preview */}
                       {question.description && (
                         <p className="text-white/60 mb-3 line-clamp-2">
                           {question.description}
                         </p>
                       )}
-                      
+
                       <div className="flex items-center gap-4 text-white/70">
                         <span className="flex items-center gap-1">
                           <LucideUser className="w-4 h-4" />
@@ -1047,7 +1041,7 @@ const App: React.FC = () => {
                           <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-sm hover:bg-white/20 transition">
                             {tag}
                           </span>
-                        )): null }
+                        )) : null}
                       </div>
                     </div>
                     <div className="flex flex-col gap-3 ml-4">
@@ -1056,17 +1050,15 @@ const App: React.FC = () => {
                           e.stopPropagation();
                           toggleUpvote(question.id);
                         }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                          checkIfUserUpvoted(question) 
-                            ? 'bg-blue-500/30 text-blue-300 border border-blue-400/50 scale-105' 
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${checkIfUserUpvoted(question)
+                            ? 'bg-blue-500/30 text-blue-300 border border-blue-400/50 scale-105'
                             : 'bg-white/10 hover:bg-white/15 border border-white/10'
-                        }`}
+                          }`}
                       >
-                        <ThumbsUp className={`w-4 h-4 transition-transform duration-300 ${
-                          checkIfUserUpvoted(question)
-                            ? 'fill-current scale-110' 
+                        <ThumbsUp className={`w-4 h-4 transition-transform duration-300 ${checkIfUserUpvoted(question)
+                            ? 'fill-current scale-110'
                             : 'hover:scale-110'
-                        }`} />
+                          }`} />
                         <span className="font-medium">{question.upvoteCount}</span>
                       </button>
                       <button
@@ -1074,18 +1066,16 @@ const App: React.FC = () => {
                           e.stopPropagation();
                           toggleSave(question.id);
                         }}
-                        className={`p-2 rounded-lg transition-all duration-300 ${
-                          checkIfUserBookmarked(question) 
-                            ? 'bg-yellow-500/30 text-yellow-300 border border-yellow-400/50 scale-105' 
+                        className={`p-2 rounded-lg transition-all duration-300 ${checkIfUserBookmarked(question)
+                            ? 'bg-yellow-500/30 text-yellow-300 border border-yellow-400/50 scale-105'
                             : 'bg-white/10 hover:bg-white/15 border border-white/10'
-                        }`}
+                          }`}
                         title={checkIfUserBookmarked(question) ? 'Remove from favorites' : 'Add to favorites'}
                       >
-                        <Bookmark className={`w-4 h-4 transition-transform duration-300 ${
-                          checkIfUserBookmarked(question) 
-                            ? 'fill-current scale-110' 
+                        <Bookmark className={`w-4 h-4 transition-transform duration-300 ${checkIfUserBookmarked(question)
+                            ? 'fill-current scale-110'
                             : 'hover:scale-110'
-                        }`} />
+                          }`} />
                       </button>
                     </div>
                   </div>
@@ -1103,7 +1093,7 @@ const App: React.FC = () => {
               ))}
             </div>
           )}
-          
+
           {/* Quick stats */}
           {filteredQuestions.length > 0 && (
             <div className="mt-12 p-6 bg-white/5 rounded-2xl border border-white/10 text-center">
@@ -1156,7 +1146,7 @@ const App: React.FC = () => {
         setSelectedExpert={setSelectedExpert}
         setShowAskExpert={setShowAskExpert}
       />
-      <AskExpertModal 
+      <AskExpertModal
         selectedExpert={selectedExpert}
         tags={tags}
         showAskExpert={showAskExpert}
@@ -1165,7 +1155,7 @@ const App: React.FC = () => {
         setQuestions={setQuestions}
         setSelectedExpert={setSelectedExpert}
         setShowAskExpert={setShowAskExpert}
-    />
+      />
     </div>
   );
 };
