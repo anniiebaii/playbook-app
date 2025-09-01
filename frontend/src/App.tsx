@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations, CreateUpvoteInput, CreateUserInput, CreateBookmarkInput, UserWithRelations } from './lib/supabase';
 import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User as LucideUser, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
-import { api } from './lib/api';
+
+// App Interfaces/Types
+import { Question, QuestionWithRelations, Answer, User, Notification, NewAnswer, AnswerData, QuestionData, QuestionUpvote, QuestionBookmark, AnswerWithRelations, CreateUpvoteInput, CreateUserInput, CreateBookmarkInput, UserWithRelations } from './lib/supabase';
+
+// Libraries
 import { QuestionService } from './lib/questionService';
 import { AnswerService } from './lib/answerService';
 import { UpvoteService } from './lib/upvoteService';
 import { UserService } from './lib/userService';
 import { BookmarkService } from './lib/bookmarkService';
-
 import { Utils } from './lib/utils';
 
 // Components
 import AuthPage from './components/AuthPage';
 import NotificationsModal from './components/NotificationsModal';
 import AskQuestionModal from './components/AskQuestionModal'; 
+import { ExpertsModal, ExpertProfileModal } from './components/ExpertsModal';
+import AskExpertModal from './components/AskExpertModal';
+import LoadingQuestionsSpinner from './components/LoadingQuestionsSpinner';
 
 // Types and Interfaces
 type ViewMode = 'trending' | 'recent' | 'unanswered';
@@ -775,234 +780,6 @@ const App: React.FC = () => {
     );
   };
 
-  const ExpertsModal = () => {
-    if (!showExperts) return null;
-    
-    const experts = users.filter(u => u.isAdmin);
-    
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden border border-white/20">
-          <div className="p-6 border-b border-white/20">
-            <div className="flex justify-between items-center">
-              <h2 className="text-3xl font-bold">Meet Our Expert Advisors</h2>
-              <button onClick={() => setShowExperts(false)} className="p-2 hover:bg-white/10 rounded-lg transition">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {experts.map(expert => (
-                <div key={expert.email} className="bg-white/5 rounded-xl border border-white/10 p-6 hover:bg-white/10 transition">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="text-4xl bg-white/10 rounded-full w-16 h-16 flex items-center justify-center font-semibold">
-                      {expert.avatar || 'EX'}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold flex items-center gap-2">
-                        {expert.name}
-                        <Shield className="w-5 h-5 text-yellow-400" />
-                      </h3>
-                      <p className="text-white/80">{expert.title || 'Expert Advisor'}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-white/60">
-                        <span className="flex items-center gap-1">
-                          <Star className="w-4 h-4" />
-                          {expert.rating || 5.0}
-                        </span>
-                        <span>{expert.responseTime || '< 24 hours'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <p className="text-white/80 mb-4">{expert.bio || 'Experienced professional ready to help.'}</p>
-                  
-                  {expert.expertise && (
-                    <div className="mb-4">
-                      <p className="text-sm text-white/60 mb-2">Areas of Expertise:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {expert.expertise.map(exp => (
-                          <span key={exp} className="px-3 py-1 bg-white/10 rounded-full text-sm">
-                            {exp}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setSelectedExpert(expert);
-                        setShowExperts(false);
-                      }}
-                      className="flex-1 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition"
-                    >
-                      View Profile
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedExpert(expert);
-                        setShowAskExpert(true);
-                        setShowExperts(false);
-                      }}
-                      className="flex-1 py-2 bg-blue-500/20 rounded-lg hover:bg-blue-500/30 transition text-blue-300"
-                    >
-                      Ask Question
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const ExpertProfileModal = () => {
-    if (!selectedExpert || showAskExpert) return null;
-    
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-white/20">
-          <div className="relative bg-gradient-to-br from-blue-500/20 to-purple-500/20 p-8 border-b border-white/20">
-            <button 
-              onClick={() => setSelectedExpert(null)} 
-              className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            
-            <div className="flex items-center gap-6">
-              <div className="text-6xl bg-white/10 rounded-full w-24 h-24 flex items-center justify-center font-semibold">
-                {selectedExpert.avatar || 'EX'}
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold flex items-center gap-3">
-                  {selectedExpert.name}
-                  <Shield className="w-6 h-6 text-yellow-400" />
-                </h2>
-                <p className="text-xl text-white/80 mt-1">{selectedExpert.title || 'Expert Advisor'}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-6">
-            <button
-              onClick={() => setShowAskExpert(true)}
-              className="w-full py-3 bg-blue-500/20 rounded-lg hover:bg-blue-500/30 transition text-blue-300 font-semibold"
-            >
-              Ask {selectedExpert.name} a Question
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const AskExpertModal = () => {
-  const [questionText, setQuestionText] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  if (!showAskExpert || !selectedExpert) return null;
-  return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-2xl w-full border border-white/20">
-          <h2 className="text-2xl font-bold mb-2">Ask {selectedExpert.name}</h2>
-          <p className="text-white/70 mb-6">
-            {selectedExpert.title} • Responds in {selectedExpert.responseTime || '< 24 hours'}
-          </p>
-          
-          <textarea
-            value={questionText}
-            onChange={(e) => setQuestionText(e.target.value)}
-            placeholder={`What would you like to ask ${selectedExpert.name}?`}
-            className="w-full p-4 mb-6 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 min-h-[120px]"
-          />
-          
-          <div className="mb-6">
-            <p className="text-sm mb-3 text-white/80">Select relevant tags:</p>
-            <div className="flex flex-wrap gap-2">
-              {tags.map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => {
-                    setSelectedTags(selectedTags.includes(tag) 
-                      ? selectedTags.filter(t => t !== tag)
-                      : [...selectedTags, tag]
-                    );
-                  }}
-                  className={`px-4 py-2 rounded-full border transition ${
-                    selectedTags.includes(tag)
-                      ? 'bg-white/20 border-white/40'
-                      : 'bg-white/10 border-white/20 hover:bg-white/15'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                if (questionText && selectedTags.length > 0) {
-                  const now = new Date();
-                  const newQuestion = {
-                    id: questions.length + 1,
-                    text: questionText,
-                    authorId: currentUser?.id || "0",
-                    author: currentUser!,
-                    role: "Member",
-                    tags: selectedTags,
-                    upvotes: [],
-                    bookmarks: [],
-                    status: "PENDING" as const,
-                    priority: "MEDIUM" as const,
-                    views: 0,
-                    assignedTo: selectedExpert,
-                    answers: [],
-                    createdAt: now,
-                    updatedAt: now
-                  };
-                  
-                  setQuestions([newQuestion, ...questions]);
-                  setShowAskExpert(false);
-                  setSelectedExpert(null);
-                  alert(`Your question has been sent to ${selectedExpert.name}!`);
-                }
-              }}
-              disabled={!questionText || selectedTags.length === 0}
-              className="flex-1 py-3 bg-blue-500/20 rounded-lg font-semibold hover:bg-blue-500/30 transition disabled:opacity-50 text-blue-300"
-            >
-              Send Question
-            </button>
-            <button 
-              onClick={() => {
-                setShowAskExpert(false);
-                setSelectedExpert(null);
-              }} 
-              className="flex-1 py-3 bg-white/10 rounded-lg font-semibold hover:bg-white/20 transition"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const LoadingQuestionsSpinner: React.FC = () => {
-  return (
-    <div className="flex flex-col justify-center items-center py-16">
-      <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
-      <span className="text-white/80 text-lg font-medium">Loading questions...</span>
-    </div>
-  );
-};
-
   // Show auth page
   if (showAuthPage) {
     return <AuthPage
@@ -1366,9 +1143,29 @@ const App: React.FC = () => {
           notifications={notifications}
         />
       )}
-      <ExpertsModal />
-      <ExpertProfileModal />
-      <AskExpertModal />
+      <ExpertsModal
+        showExperts={showExperts}
+        setShowExperts={setShowExperts}
+        setSelectedExpert={setSelectedExpert}
+        setShowAskExpert={setShowAskExpert}
+        users={users}
+      />
+      <ExpertProfileModal
+        selectedExpert={selectedExpert}
+        showAskExpert={showAskExpert}
+        setSelectedExpert={setSelectedExpert}
+        setShowAskExpert={setShowAskExpert}
+      />
+      <AskExpertModal 
+        selectedExpert={selectedExpert}
+        tags={tags}
+        showAskExpert={showAskExpert}
+        questions={questions}
+        currentUser={currentUser}
+        setQuestions={setQuestions}
+        setSelectedExpert={setSelectedExpert}
+        setShowAskExpert={setShowAskExpert}
+    />
     </div>
   );
 };
