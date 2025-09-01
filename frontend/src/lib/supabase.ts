@@ -27,7 +27,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Types and Interfaces for Supabase schema
 export interface User {
-  id: number;
+  id: string; // UUID
   email: string;
   password: string;
   name: string;
@@ -48,7 +48,7 @@ export interface Answer {
   id: number;
   type: 'TEXT' | 'VIDEO' | 'AUDIO';
   content: string;
-  authorId: number;
+  authorId: string; // UUID
   questionId: number;
   isAdmin: boolean;
   createdAt: Date;
@@ -64,8 +64,8 @@ export interface Question {
   views: number;
   status: QuestionStatus;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  authorId: number;
-  assignedToId?: number;
+  authorId: string; // UUID
+  assignedToId?: string; // UUID
   createdAt: Date;
   updatedAt: Date;
 }
@@ -90,20 +90,20 @@ export interface QuestionData {
   title: string;
   description?: string;
   tags: string[];
-  authorId: number;
+  authorId: string; // UUID
 }
 
 export interface QuestionUpvote {
   id: number;
   questionId: number;
-  userId: number;
+  userId: string; // UUID
   createdAt: Date;
 } 
 
 export interface QuestionBookmark {
   id: number;
   questionId: number;
-  userId: number;
+  userId: string; // UUID
   createdAt: Date;
 } 
 
@@ -129,19 +129,26 @@ export interface QuestionWithRelations extends Question {
 export interface AnswerData {
   type: AnswerType;
   content: string;
-  authorId: number;
+  authorId: string; // UUID
   questionId: number;
   isAdmin: boolean;
 }
 
 export interface CreateUpvoteInput {
   questionId: number;
-  userId: number;
+  userId: string; // UUID
 }
 
 export interface CreateBookmarkInput {
   questionId: number;
-  userId: number;
+  userId: string; // UUID
+}
+
+export interface CreateUserInput {
+  email: string;
+  password: string;
+  name: string;
+  isAdmin?: boolean;
 }
 
 export interface UpdateAnswerInput {
@@ -155,7 +162,7 @@ export interface AnswerWithRelations extends Answer {
 
 export interface GetAnswersFilters {
   questionId?: number;
-  authorId?: number;
+  authorId?: string; // UUID
   type?: AnswerType;
   limit?: number;
   offset?: number;
