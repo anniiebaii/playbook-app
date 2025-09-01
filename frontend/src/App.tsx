@@ -47,6 +47,7 @@ const App: React.FC = () => {
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [isAdminView, setIsAdminView] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>('trending');
+  const [error, setError] = useState<string>('');
 
   /* App Object States */
   const [users, setUsers] = useState<UserWithRelations[]>([]);
@@ -59,6 +60,12 @@ const App: React.FC = () => {
   const [showAskQuestion, setShowAskQuestion] = useState<boolean>(false);
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionWithRelations | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const filteredQuestions = questions.filter(q => {
+    const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    q.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTag = !selectedTag || q.tags.includes(selectedTag);
+    return matchesSearch && matchesTag;
+  });
 
   /* Answer States */
   const [newAnswer, setNewAnswer] = useState<NewAnswer>({ type: 'TEXT', content: '' });
@@ -99,6 +106,14 @@ const App: React.FC = () => {
     fetchQuestions();
     fetchUsers();
   }, []);
+
+  // Only sort when loading data initially
+  useEffect(() => {
+    // When questions first load, sort them once
+    if (questions.length > 0) {
+      setQuestions(sortQuestions(questions));
+    }
+  }, [questions.length, viewMode]); // Only when data loads or view changes
 
   // TODO: handle notifications
   const [notifications, setNotifications] = useState<Notification[]>([
@@ -200,7 +215,6 @@ const App: React.FC = () => {
     setNewAnswer({ type: 'TEXT', content: '' });
   };
 
-  const [error, setError] = useState<string>('');
 
   const handleSignIn = async (email: string, password: string) => {
     const user = await UserService.signIn(email, password)
@@ -246,8 +260,6 @@ const App: React.FC = () => {
       return;
     }
 
-    // const updatedUsers = [...users, newUser];
-    //setUsers(updatedUsers);
     setIsAuthenticated(true);
     setCurrentUser(newUser);
     setShowAuthPage(false);
@@ -375,21 +387,6 @@ const App: React.FC = () => {
       }
     })
   }
-
-  // Only sort when loading data initially
-  useEffect(() => {
-    // When questions first load, sort them once
-    if (questions.length > 0) {
-      setQuestions(sortQuestions(questions));
-    }
-  }, [questions.length, viewMode]); // Only when data loads or view changes
-
-  const filteredQuestions = questions.filter(q => {
-    const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.author.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = !selectedTag || q.tags.includes(selectedTag);
-    return matchesSearch && matchesTag;
-  });
 
   const checkIfUserUpvoted = (question: QuestionWithRelations): boolean => {
     return question.upvotes?.some(upvote => upvote.userId === currentUser?.id) ?? false;
