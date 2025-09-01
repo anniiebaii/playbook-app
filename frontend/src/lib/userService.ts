@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { UserWithRelations, Answer, AnswerWithRelations, AnswerData, QuestionStatus, CreateUserInput } from './supabase'
+import type { UserWithRelations, CreateUserInput } from './supabase'
 
 export type LoginError = 'UNCONFIRMED' | 'INCORRECT CREDS' | 'USER DOES NOT EXIST' | 'DB ERROR'
 

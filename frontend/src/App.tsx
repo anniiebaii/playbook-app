@@ -12,69 +12,22 @@ import { UserService } from './lib/userService';
 import { BookmarkService } from './lib/bookmarkService';
 import { Utils } from './lib/utils';
 
-// Components
+// UI Components
 import AuthPage from './components/AuthPage';
-import NotificationsModal from './components/NotificationsModal';
-import AskQuestionModal from './components/AskQuestionModal';
-import { ExpertsModal, ExpertProfileModal } from './components/ExpertsModal';
-import AskExpertModal from './components/AskExpertModal';
+import NotificationsModal from './components/modals/NotificationsModal';
+import AskQuestionModal from './components/modals/AskQuestionModal';
+import QuestionDetailModal from './components/modals/QuestionDetailModal';
+import { ExpertsModal, ExpertProfileModal } from './components/modals/ExpertsModal';
+import AskExpertModal from './components/modals/AskExpertModal';
 import LoadingQuestionsSpinner from './components/LoadingQuestionsSpinner';
+import AdminPanel from './components/AdminPanel';
 
 // Types and Interfaces
 type ViewMode = 'trending' | 'recent' | 'unanswered';
 export type AuthMode = 'signin' | 'signup';
-type AdminView = 'dashboard' | 'questions' | 'users';
 
 const App: React.FC = () => {
   // Dummy User data
-  const getDummyUsers = (): User[] => {
-    return [
-      // { 
-      //   id: "550e8400-e29b-41d4-a716-446655440000",
-      //   email: 'admin@leaderlink.com', 
-      //   password: 'admin123', 
-      //   name: 'Stacey Santos', 
-      //   isAdmin: true, 
-      //   joinDate: new Date('2025-01-01'), 
-      //   status: 'active',
-      //   title: 'Frontier',
-      //   expertise: ['Sales Strategy', 'Team Management', 'Enterprise Sales'],
-      //   bio: 'Over 20 years of experience building and scaling high-performance sales teams.',
-      //   answersCount: 156,
-      //   rating: 4.9,
-      //   responseTime: '< 2 hours',
-      //   avatar: 'SS',
-      //   points: 15600
-      // },
-      // { 
-      //   id: "550e8400-e29b-41d4-a716-446655440001",
-      //   email: 'sarah.expert@leaderlink.com', 
-      //   password: 'expert123', 
-      //   name: 'Richard Anderson', 
-      //   isAdmin: true, 
-      //   joinDate: new Date('2025-01-15'), 
-      //   status: 'active',
-      //   title: 'Frontier',
-      //   expertise: ['Cold Calling', 'Objection Handling', 'Sales Training'],
-      //   bio: 'Certified sales trainer with 15+ years helping teams exceed quotas.',
-      //   answersCount: 89,
-      //   rating: 4.8,
-      //   responseTime: '< 4 hours',
-      //   avatar: 'RA',
-      //   points: 8900
-      // },
-      // { 
-      //   id: "550e8400-e29b-41d4-a716-446655440002",
-      //   email: 'demo@example.com', 
-      //   password: 'demo123', 
-      //   name: 'Demo User', 
-      //   isAdmin: false, 
-      //   joinDate: new Date('2025-03-15'), 
-      //   status: 'active',
-      //   points: 450
-      // }
-    ];
-  };
 
   const getUpvotes = (): QuestionUpvote[] => {
     // TODO: implement fetching upvotes from DB logic
@@ -85,13 +38,6 @@ const App: React.FC = () => {
     // TODO: implement fetching bookmarks from DB logic
     return [];
   }
-
-
-  // Dummy questions
-  const getDummyQuestions = (): QuestionWithRelations[] => {
-    return [
-    ];
-  };
 
   // React Hooks and States with proper typing
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -105,7 +51,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [upvotes, setUpvotes] = useState<QuestionUpvote[]>(getUpvotes());
   const [bookmarks, setBookmarks] = useState<QuestionBookmark[]>(getBookmarks());
-  const [questions, setQuestions] = useState<QuestionWithRelations[]>(getDummyQuestions());
+  const [questions, setQuestions] = useState<QuestionWithRelations[]>([]);
 
   /* Question States */
   const [showAskQuestion, setShowAskQuestion] = useState<boolean>(false);
@@ -139,11 +85,6 @@ const App: React.FC = () => {
       }
     };
 
-    fetchQuestions();
-  }, []);
-
-  // Fetch users asynchronously after component mounts
-  useEffect(() => {
     const fetchUsers = async () => {
       try {
         const usersData = await UserService.getAllUsers();
@@ -153,6 +94,7 @@ const App: React.FC = () => {
       }
     };
 
+    fetchQuestions();
     fetchUsers();
   }, []);
 
@@ -455,327 +397,6 @@ const App: React.FC = () => {
     return question.bookmarks?.some(bookmark => bookmark.userId === currentUser?.id) ?? false;
   }
 
-  // Admin Panel Component
-  const AdminPanel: React.FC = () => {
-    const [adminView, setAdminView] = useState<AdminView>('dashboard');
-    const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'answered'>('all');
-
-    const pendingQuestions = questions.filter(q => q.status === 'PENDING');
-    const answeredQuestions = questions.filter(q => q.status === 'ANSWERED');
-    const activeUsers = users.filter(u => !u.isAdmin);
-
-    const getFilteredQuestions = (): QuestionWithRelations[] => {
-      if (filterStatus === 'pending') return pendingQuestions;
-      if (filterStatus === 'answered') return answeredQuestions;
-      return questions;
-    };
-
-    const DashboardView: React.FC = () => (
-      <>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div
-            onClick={() => setAdminView('questions')}
-            className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-xl rounded-xl p-6 border border-blue-500/20 cursor-pointer hover:scale-105 transition-transform"
-          >
-            <MessageSquare className="w-8 h-8 text-blue-400 mb-4" />
-            <h3 className="text-3xl font-bold">{questions.length}</h3>
-            <p className="text-white/60">Total Questions</p>
-            <p className="text-sm text-blue-400 mt-2">Click to view all →</p>
-          </div>
-
-          <div
-            onClick={() => {
-              setAdminView('questions');
-              setFilterStatus('pending');
-            }}
-            className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 backdrop-blur-xl rounded-xl p-6 border border-orange-500/20 cursor-pointer hover:scale-105 transition-transform"
-          >
-            <Clock className="w-8 h-8 text-orange-400 mb-4" />
-            <h3 className="text-3xl font-bold">{pendingQuestions.length}</h3>
-            <p className="text-white/60">Pending Questions</p>
-            <p className="text-sm text-orange-400 mt-2">Click to view →</p>
-          </div>
-
-          <div
-            onClick={() => setAdminView('users')}
-            className="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-xl rounded-xl p-6 border border-green-500/20 cursor-pointer hover:scale-105 transition-transform"
-          >
-            <Users className="w-8 h-8 text-green-400 mb-4" />
-            <h3 className="text-3xl font-bold">{activeUsers.length}</h3>
-            <p className="text-white/60">Active Users</p>
-            <p className="text-sm text-green-400 mt-2">Click to manage →</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
-            <BarChart3 className="w-8 h-8 text-purple-400 mb-4" />
-            <h3 className="text-3xl font-bold">{questions.reduce((acc, q) => acc + q.views, 0)}</h3>
-            <p className="text-white/60">Total Views</p>
-          </div>
-        </div>
-
-        <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/10">
-          <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-          <div className="space-y-4">
-            {questions.slice(0, 5).map(question => (
-              <div key={question.id} className="p-4 bg-white/5 rounded-lg flex justify-between items-center">
-                <div>
-                  <h3 className="font-semibold">{question.text}</h3>
-                  <p className="text-sm text-white/60 mt-1">
-                    {question.author.name} • {Utils.formatTimestamp(question.createdAt)}
-                  </p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs ${question.status === 'ANSWERED' ? 'bg-green-500/20 text-green-300' :
-                    'bg-orange-500/20 text-orange-300'
-                  }`}>
-                  {question.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </>
-    );
-
-    const QuestionsView: React.FC = () => (
-      <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/10">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Question Management</h2>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setAdminView('dashboard')}
-              className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition"
-            >
-              ← Back to Dashboard
-            </button>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as 'all' | 'pending' | 'answered')}
-              className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
-            >
-              <option value="all">All Questions</option>
-              <option value="pending">Pending Only</option>
-              <option value="answered">Answered Only</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {getFilteredQuestions().map(question => (
-            <div key={question.id} className="p-4 bg-white/5 rounded-lg">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold">{question.text}</h3>
-                  <p className="text-sm text-white/60 mt-1">
-                    {question.author.name} • {Utils.formatTimestamp(question.createdAt)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedQuestion(question);
-                    setIsAdminView(false);
-                  }}
-                  className="px-3 py-1 bg-blue-500/20 rounded text-sm hover:bg-blue-500/30 transition"
-                >
-                  {question.status === 'ANSWERED' ? 'View' : 'Answer'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-
-    const UsersView: React.FC = () => (
-      <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/10">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">User Management</h2>
-          <button
-            onClick={() => setAdminView('dashboard')}
-            className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition"
-          >
-            ← Back to Dashboard
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/20">
-                <th className="text-left py-3 px-4">User</th>
-                <th className="text-left py-3 px-4">Joined</th>
-                <th className="text-left py-3 px-4">Points</th>
-                <th className="text-left py-3 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeUsers.map(user => (
-                <tr key={user.email} className="border-b border-white/10">
-                  <td className="py-3 px-4">
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-white/60">{user.email}</p>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm">
-                    {user.joinDate.toLocaleDateString()}
-                  </td>
-                  <td className="py-3 px-4">
-                    {user.points || 0}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded-full text-xs">
-                      Active
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-        <header className="bg-black/20 backdrop-blur-xl border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Shield className="w-6 h-6 text-yellow-400" />
-                Admin Dashboard
-              </h1>
-              <nav className="flex gap-2">
-                <button
-                  onClick={() => setAdminView('dashboard')}
-                  className={`px-3 py-1 rounded-lg transition ${adminView === 'dashboard' ? 'bg-white/20' : 'hover:bg-white/10'
-                    }`}
-                >
-                  Overview
-                </button>
-                <button
-                  onClick={() => setAdminView('questions')}
-                  className={`px-3 py-1 rounded-lg transition ${adminView === 'questions' ? 'bg-white/20' : 'hover:bg-white/10'
-                    }`}
-                >
-                  Questions
-                </button>
-                <button
-                  onClick={() => setAdminView('users')}
-                  className={`px-3 py-1 rounded-lg transition ${adminView === 'users' ? 'bg-white/20' : 'hover:bg-white/10'
-                    }`}
-                >
-                  Users
-                </button>
-              </nav>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setIsAdminView(false)}
-                className="px-3 py-1 bg-white/10 rounded-lg hover:bg-white/20 transition"
-              >
-                Switch to User View
-              </button>
-              <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-lg transition">
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {adminView === 'dashboard' && <DashboardView />}
-          {adminView === 'questions' && <QuestionsView />}
-          {adminView === 'users' && <UsersView />}
-        </div>
-      </div>
-    );
-  };
-
-  // Modals
-
-
-  const QuestionDetailModal = () => {
-    // Define our React Hook for managing the answer text state
-    const [answerText, setAnswerText] = useState("");
-
-    if (!selectedQuestion) return null;
-
-    const question = questions.find(q => q.id === selectedQuestion.id) || selectedQuestion;
-
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-        {/* max-h-[90vh]: keep the modal from being taller than 90% of the viewport height. */}
-        { /* overflow-y-auto: make the modal scroll internally when content overflows. */}
-        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-4xl w-full border border-white/20 max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-start mb-6">
-            <h2 className="text-3xl font-bold pr-4">{question.text}</h2>
-            <button onClick={() => setSelectedQuestion(null)} className="p-2 hover:bg-white/10 rounded-lg">
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          {question.description && (
-            <p className="text-white/80 mb-6">{question.description}</p>
-          )}
-
-          <div className="flex items-center gap-4 mb-6 text-white/80">
-            <span>{question.author.name}, {question.role}</span>
-            <span>•</span>
-            <span>{question.createdAt.toLocaleDateString()}</span>
-          </div>
-
-          <div className="flex gap-2 mb-8">
-            {(question.tags ?? []).map(tag => (
-              <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-sm">
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          <div className="border-t border-white/20 pt-6">
-            <h3 className="text-xl font-semibold mb-4">Answers ({question.answers?.length ?? 0})</h3>
-
-            {(question.answers ?? []).map(answer => (
-              <div key={answer.id} className="mb-6 p-4 bg-white/5 rounded-lg">
-                <div className="flex items-center gap-2 mb-3">
-                  {answer.isAdmin && <Shield className="w-4 h-4 text-yellow-400" />}
-                  <span className="font-semibold">{answer.author.name}</span>
-                  <span className="text-sm text-white/60">{answer.createdAt.toLocaleDateString()}</span>
-                </div>
-                <p className="text-white/90">{answer.content}</p>
-              </div>
-            ))}
-
-            {currentUser?.isAdmin && (
-              <div className="mt-6 p-4 bg-white/5 rounded-lg">
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-yellow-400" />
-                  Add Admin Answer
-                </h4>
-                <textarea
-                  value={answerText}
-                  onChange={(e) => setAnswerText(e.target.value)}
-                  placeholder="Type your answer..."
-                  className="w-full p-3 mb-4 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 min-h-[100px]"
-                />
-                <button
-                  onClick={() => {
-                    handleAddAnswer(answerText, "TEXT");
-                    setAnswerText(""); // clear after posting
-                  }}
-                  disabled={!answerText}
-                  className="w-full py-3 bg-white/20 rounded-lg font-semibold hover:bg-white/30 transition disabled:opacity-50"
-                >
-                  Post Answer
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   // Show auth page
   if (showAuthPage) {
     return <AuthPage
@@ -791,13 +412,20 @@ const App: React.FC = () => {
 
   // Show admin panel
   if (isAuthenticated && currentUser?.isAdmin && isAdminView) {
-    return <AdminPanel />;
+    return <AdminPanel 
+      questions={questions}
+      users={users}
+      setSelectedQuestion={setSelectedQuestion}
+      setIsAdminView={setIsAdminView}
+      handleLogout={handleLogout}
+    />;
   }
 
   // Main app
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-800 to-purple-700 text-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
+        
         {/* Welcome section for new users */}
         {!isAuthenticated && (
           <div className="mb-12 p-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl border border-white/20 text-center">
@@ -1119,20 +747,25 @@ const App: React.FC = () => {
       </div>
 
       {/* Modals */}
-      {showAskQuestion ? <AskQuestionModal
+      <AskQuestionModal
         currentUser={currentUser}
         tags={tags}
         showAskQuestion={showAskQuestion}
         setShowAskQuestion={setShowAskQuestion}
         handleAskQuestion={handleAskQuestion}
-      /> : null}
-      <QuestionDetailModal />
-      {showNotifications && (
-        <NotificationsModal
+      />
+      <QuestionDetailModal 
+        selectedQuestion={selectedQuestion}
+        questions={questions}
+        setSelectedQuestion={setSelectedQuestion}
+        currentUser={currentUser}
+        handleAddAnswer={handleAddAnswer}
+      />
+      <NotificationsModal
+          showNotifications={showNotifications}
           setShowNotifications={setShowNotifications}
           notifications={notifications}
-        />
-      )}
+      />
       <ExpertsModal
         showExperts={showExperts}
         setShowExperts={setShowExperts}

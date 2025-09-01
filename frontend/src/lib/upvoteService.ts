@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { User, Answer, AnswerWithRelations, CreateUpvoteInput, QuestionStatus, QuestionUpvote} from './supabase'
+import type { CreateUpvoteInput, QuestionUpvote} from './supabase'
 
 
 export class UpvoteService {  

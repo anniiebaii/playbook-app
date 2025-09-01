@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import { Notification } from '../lib/supabase';
-import { Utils } from '../lib/utils';
-import { Search, Menu, Plus, Video, Mic, FileText, ThumbsUp, Bookmark, LogIn, LogOut, User as LucideUser, Shield, X, Upload, Play, Pause, Mail, Lock, ArrowRight, Eye, EyeOff, LayoutDashboard, Users, MessageSquare, TrendingUp, Settings, Bell, CheckCircle, Clock, AlertCircle, BarChart3, Activity, Award, Star, ChevronDown, HelpCircle } from 'lucide-react';
+import { Notification } from '../../lib/supabase';
+import { Utils } from '../../lib/utils';
+import { User as LucideUser, X } from 'lucide-react';
 
 
 interface NotificationsProp {
+    showNotifications: boolean;
     setShowNotifications: (show: boolean) => void;
     notifications: Notification[]
 }
 const NotificationsModal: React.FC<NotificationsProp> = ({
+    showNotifications,
     setShowNotifications,
     notifications
 }) => {
+
+    if (!showNotifications) return null;
+
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-xl rounded-2xl max-w-md w-full border border-white/20">

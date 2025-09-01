@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { User, Answer, AnswerWithRelations, AnswerData, QuestionStatus} from './supabase'
+import type { Answer, AnswerWithRelations, AnswerData } from './supabase'
 
 
 export class AnswerService {

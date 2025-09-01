@@ -1,5 +1,4 @@
 import { supabase } from './supabase'
-import type { UserWithRelations, Answer, AnswerWithRelations, AnswerData, QuestionStatus, CreateUserInput } from './supabase'
 
 export class AuthService {
   
