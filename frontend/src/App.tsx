@@ -21,6 +21,8 @@ import { ExpertsModal, ExpertProfileModal } from './components/modals/ExpertsMod
 import AskExpertModal from './components/modals/AskExpertModal';
 import LoadingQuestionsSpinner from './components/LoadingQuestionsSpinner';
 import AdminPanel from './components/AdminPanel';
+import Header from './components/Header';
+import StatsBar from './components/StatsBar';
 
 // Types and Interfaces
 type ViewMode = 'trending' | 'recent' | 'unanswered';
@@ -427,28 +429,14 @@ const App: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         
         {/* Welcome section for new users */}
-        {!isAuthenticated && (
-          <div className="mb-12 p-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl border border-white/20 text-center">
-            <h2 className="text-2xl font-bold mb-4">Welcome to Lynk</h2>
-            <p className="text-lg text-white/80 mb-6 max-w-2xl mx-auto">
-              Build the ultimate knowledge base for sales and business leaders. Get expert insights from verified professionals.
-            </p>
-            <div className="flex gap-4 justify-center flex-wrap">
-              <div className="flex items-center gap-2 text-white/80">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-                <span>Knowledge Encyclopedia</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/80">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-                <span>Expert-Driven Content</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/80">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-                <span>Growing Question Library</span>
-              </div>
-            </div>
-          </div>
-        )}
+        {!isAuthenticated && 
+          <Header
+            title='Welcome to Lynk'
+            subtitle='Build the ultimate knowledge base for sales and business leaders. Get expert insights from verified professionals.'
+            highlight_1='Knowledge Encyclopedia'
+            highlight_2='Expert-Driven Content'
+            highlight_3='Growing Question Library'
+        />}
 
         <header className="flex justify-between items-center mb-12">
           <h1 className="text-4xl font-bold">Lynk</h1>
@@ -565,11 +553,14 @@ const App: React.FC = () => {
         <section>
           <div className="flex justify-between items-center mb-8">
             <div>
+              {/* Current Filter View */}
               <h2 className="text-3xl font-bold mb-2">
                 {viewMode === 'trending' && 'Trending Questions'}
                 {viewMode === 'recent' && 'Recent Questions'}
                 {viewMode === 'unanswered' && 'Unanswered Questions'}
               </h2>
+
+              {/* Question Filters */}
               <div className="flex gap-4">
                 <button
                   onClick={() => setViewMode('trending')}
@@ -601,6 +592,7 @@ const App: React.FC = () => {
             </button>
           </div>
 
+          {/* Questions Section */}  
           {loadingQuestions ? <LoadingQuestionsSpinner /> : null}
           {!loadingQuestions && filteredQuestions.length === 0 ? (
             <div className="text-center py-16">
@@ -723,26 +715,13 @@ const App: React.FC = () => {
           )}
 
           {/* Quick stats */}
-          {filteredQuestions.length > 0 && (
-            <div className="mt-12 p-6 bg-white/5 rounded-2xl border border-white/10 text-center">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div>
-                  <div className="text-3xl font-bold text-blue-400">{questions.length}</div>
-                  <div className="text-white/60">Total Questions</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-green-400">
-                    {questions.filter(q => q.status === 'ANSWERED').length}
-                  </div>
-                  <div className="text-white/60">Expert Answers</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-purple-400">{users.filter(u => u.isAdmin).length}</div>
-                  <div className="text-white/60">Expert Advisors</div>
-                </div>
-              </div>
-            </div>
-          )}
+          {filteredQuestions.length > 0 ?
+            <StatsBar 
+              questionsCount={questions.length}
+              answersCount={questions.filter(q => q.status === 'ANSWERED').length}
+              expertsCount={users.filter(u => u.isAdmin).length}
+            /> : null
+          }
         </section>
       </div>
 
