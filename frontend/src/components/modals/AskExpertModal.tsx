@@ -1,4 +1,4 @@
-import { User, Question, QuestionWithRelations } from "lib/supabase";
+import { User, Question, QuestionWithRelations } from "../../lib/supabase";
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 

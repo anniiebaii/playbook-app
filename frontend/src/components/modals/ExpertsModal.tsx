@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { X, Shield, Star } from "lucide-react";
-import { User, QuestionWithRelations } from "../lib/supabase";
-import AskExpertModal from "./AskExpertModal";
+import { User, QuestionWithRelations } from "../../lib/supabase";
 
 type ExpertsModalProps = {
   showExperts: boolean;

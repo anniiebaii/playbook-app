@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
-import { QuestionData } from '../lib/supabase';
-import { User } from '../lib/supabase';
+import { QuestionData } from '../../lib/supabase';
+import { User } from '../../lib/supabase';
 
 interface AskQuestionProps {
     currentUser: User | null;
