@@ -8,8 +8,11 @@ import { UpvoteService } from './lib/upvoteService';
 import { UserService } from './lib/userService';
 import { BookmarkService } from './lib/bookmarkService';
 
-import AuthPage from './components/AuthPage';
+import { Utils } from './lib/utils';
 
+// Components
+import AuthPage from './components/AuthPage';
+import NotificationsModal from './components/NotificationsModal';
 
 // Types and Interfaces
 type ViewMode = 'trending' | 'recent' | 'unanswered';
@@ -165,21 +168,6 @@ const App: React.FC = () => {
   const tags: string[] = ["Objections", "Recruiting", "Daily Routines", "Team Management", "Sales", "Skills", "Leadership"];
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
-
-  // Functions with proper typing
-  const formatTimestamp = (date: Date): string => {
-    const now = new Date();
-    console.log(date);
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-    
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
-  };
 
   const handleLogout = (): void => {
     setIsAuthenticated(false);
@@ -527,7 +515,7 @@ const App: React.FC = () => {
                 <div>
                   <h3 className="font-semibold">{question.text}</h3>
                   <p className="text-sm text-white/60 mt-1">
-                    {question.author.name} • {formatTimestamp(question.createdAt)}
+                    {question.author.name} • {Utils.formatTimestamp(question.createdAt)}
                   </p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs ${
@@ -573,7 +561,7 @@ const App: React.FC = () => {
                 <div>
                   <h3 className="font-semibold">{question.text}</h3>
                   <p className="text-sm text-white/60 mt-1">
-                    {question.author.name} • {formatTimestamp(question.createdAt)}
+                    {question.author.name} • {Utils.formatTimestamp(question.createdAt)}
                   </p>
                 </div>
                 <button
@@ -702,40 +690,6 @@ const App: React.FC = () => {
   };
 
   // Modals
-  const NotificationsModal = () => {
-    if (!showNotifications) return null;
-    
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl max-w-md w-full border border-white/20">
-          <div className="p-6 border-b border-white/20 flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Notifications</h2>
-            <button onClick={() => setShowNotifications(false)} className="p-2 hover:bg-white/10 rounded-lg">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
-            {notifications.map(notification => {
-              const Icon = notification.icon;
-              return (
-                <div key={notification.id} className="flex gap-3">
-                  <div className={`p-2 bg-white/10 rounded-lg ${notification.color}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">{notification.title}</h3>
-                    <p className="text-sm text-white/80">{notification.message}</p>
-                    <span className="text-xs text-white/60">{formatTimestamp(notification.timestamp)}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const AskQuestionModal = () => {
   const [questionText, setQuestionText] = useState('');
   const [questionDescription, setQuestionDescription] = useState('');
@@ -1357,7 +1311,7 @@ const App: React.FC = () => {
                           {question.author.name}, {question.role}
                         </span>
                         <span>•</span>
-                        <span>{formatTimestamp(question.createdAt)}</span>
+                        <span>{Utils.formatTimestamp(question.createdAt)}</span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
                           <Eye className="w-4 h-4" />
@@ -1462,7 +1416,12 @@ const App: React.FC = () => {
       {/* Modals */}
       <AskQuestionModal />
       <QuestionDetailModal />
-      <NotificationsModal />
+      {showNotifications && (
+        <NotificationsModal
+          setShowNotifications={setShowNotifications}
+          notifications={notifications}
+        />
+      )}
       <ExpertsModal />
       <ExpertProfileModal />
       <AskExpertModal />
