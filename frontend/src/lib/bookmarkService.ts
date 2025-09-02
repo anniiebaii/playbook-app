@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { User, Answer, AnswerWithRelations, CreateBookmarkInput, QuestionStatus, QuestionBookmark} from './supabase'
+import type { CreateBookmarkInput, QuestionBookmark} from './supabase'
 
 
 export class BookmarkService {  

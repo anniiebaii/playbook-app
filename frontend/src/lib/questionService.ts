@@ -1,6 +1,5 @@
-import { get } from 'http'
 import { supabase } from './supabase'
-import type { QuestionWithRelations, Question, User, Answer, QuestionUpvote, QuestionBookmark, QuestionData, AnswerWithRelations } from './supabase'
+import type { QuestionWithRelations, Question, QuestionBookmark, QuestionData, AnswerWithRelations } from './supabase'
 
 export class QuestionService {
 
