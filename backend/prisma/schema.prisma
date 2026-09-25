@@ -8,11 +8,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Supabase Auth will handle storing email/password auths. 
+// App profile for each account. Credentials live in Supabase Auth (auth.users);
+// `id` is the same UUID.
 model User {
   id                String             @id @db.Uuid // Supabase Auth UUID
   email             String             @unique
-  // password field removed - handled by Supabase Auth
   name              String
   isAdmin           Boolean            @default(false)
   status            UserStatus         @default(ACTIVE)
@@ -105,7 +105,7 @@ model Notification {
   color     String
   userId    String           @db.Uuid
   createdAt DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime         @default(now()) @updatedAt
+  updatedAt DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")

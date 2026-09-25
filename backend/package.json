@@ -1,18 +1,16 @@
 {
+  "name": "lynk-database",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prisma schema for the Lynk Postgres database hosted on Supabase.",
+  "scripts": {
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "format": "prisma format",
+    "validate": "prisma validate"
+  },
   "dependencies": {
     "@prisma/client": "^6.14.0",
     "prisma": "^6.14.0"
-  },
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  }
 }
