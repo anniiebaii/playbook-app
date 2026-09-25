@@ -1,101 +1,133 @@
-import { QuestionWithRelations, User, Answer } from '../../lib/supabase';
-import React, { useState } from 'react';
-import { User as LucideUser, Shield, X } from 'lucide-react';
+import { Shield } from 'lucide-react';
+import { useId, useState, type SubmitEvent } from 'react';
 
-interface QuestionDetailsProp {
-    currentUser: User | null
-    selectedQuestion: QuestionWithRelations | null
-    questions: QuestionWithRelations[]
-    setSelectedQuestion: (question: QuestionWithRelations | null) => void;
-    handleAddAnswer: (content: string, type: Answer["type"]) => void;
+import type { QuestionWithRelations } from '../../types/models';
+import { getErrorMessage } from '../../utils/errors';
+import { formatDate } from '../../utils/format';
+import { TagList } from '../questions/TagList';
+import { ErrorMessage } from '../ui/ErrorMessage';
+import { Modal, ModalCloseButton } from '../ui/Modal';
+
+interface QuestionDetailModalProps {
+  question: QuestionWithRelations;
+  /** Whether the current user may post answers (experts only). */
+  canAnswer: boolean;
+  onClose: () => void;
+  onSubmitAnswer: (content: string) => Promise<void>;
 }
 
-const QuestionDetailModal: React.FC<QuestionDetailsProp> = ({
-    selectedQuestion,
-    questions,
-    setSelectedQuestion,
-    currentUser,
-    handleAddAnswer
-}) => {
-    // Define our React Hook for managing the answer text state
-    const [answerText, setAnswerText] = useState("");
+export function QuestionDetailModal({
+  question,
+  canAnswer,
+  onClose,
+  onSubmitAnswer,
+}: QuestionDetailModalProps) {
+  const headingId = useId();
 
-    if (!selectedQuestion) return null;
-
-    const question = questions.find(q => q.id === selectedQuestion.id) || selectedQuestion;
-
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-        {/* max-h-[90vh]: keep the modal from being taller than 90% of the viewport height. */}
-        { /* overflow-y-auto: make the modal scroll internally when content overflows. */}
-        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl max-w-4xl w-full border border-white/20 max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-start mb-6">
-            <h2 className="text-3xl font-bold pr-4">{question.text}</h2>
-            <button onClick={() => setSelectedQuestion(null)} className="p-2 hover:bg-white/10 rounded-lg">
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          {question.description && (
-            <p className="text-white/80 mb-6">{question.description}</p>
-          )}
-
-          <div className="flex items-center gap-4 mb-6 text-white/80">
-            <span>{question.author.name}, {question.role}</span>
-            <span>•</span>
-            <span>{question.createdAt.toLocaleDateString()}</span>
-          </div>
-
-          <div className="flex gap-2 mb-8">
-            {(question.tags ?? []).map(tag => (
-              <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-sm">
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          <div className="border-t border-white/20 pt-6">
-            <h3 className="text-xl font-semibold mb-4">Answers ({question.answers?.length ?? 0})</h3>
-
-            {(question.answers ?? []).map(answer => (
-              <div key={answer.id} className="mb-6 p-4 bg-white/5 rounded-lg">
-                <div className="flex items-center gap-2 mb-3">
-                  {answer.isAdmin && <Shield className="w-4 h-4 text-yellow-400" />}
-                  <span className="font-semibold">{answer.author.name}</span>
-                  <span className="text-sm text-white/60">{answer.createdAt.toLocaleDateString()}</span>
-                </div>
-                <p className="text-white/90">{answer.content}</p>
-              </div>
-            ))}
-
-            {currentUser?.isAdmin && (
-              <div className="mt-6 p-4 bg-white/5 rounded-lg">
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-yellow-400" />
-                  Add Admin Answer
-                </h4>
-                <textarea
-                  value={answerText}
-                  onChange={(e) => setAnswerText(e.target.value)}
-                  placeholder="Type your answer..."
-                  className="w-full p-3 mb-4 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 min-h-[100px]"
-                />
-                <button
-                  onClick={() => {
-                    handleAddAnswer(answerText, "TEXT");
-                    setAnswerText(""); // clear after posting
-                  }}
-                  disabled={!answerText}
-                  className="w-full py-3 bg-white/20 rounded-lg font-semibold hover:bg-white/30 transition disabled:opacity-50"
-                >
-                  Post Answer
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+  return (
+    <Modal
+      labelledBy={headingId}
+      onClose={onClose}
+      className="max-h-[90vh] max-w-4xl overflow-y-auto p-8"
+    >
+      <div className="mb-6 flex items-start justify-between">
+        <h2 id={headingId} className="pr-4 text-3xl font-bold">
+          {question.text}
+        </h2>
+        <ModalCloseButton onClick={onClose} />
       </div>
-    );
+
+      {question.description && <p className="mb-6 text-white/80">{question.description}</p>}
+
+      <div className="mb-6 flex items-center gap-4 text-white/80">
+        <span>
+          {question.author.name}, {question.role}
+        </span>
+        <span aria-hidden="true">•</span>
+        <time dateTime={question.createdAt}>{formatDate(question.createdAt)}</time>
+      </div>
+
+      <div className="mb-8">
+        <TagList tags={question.tags} />
+      </div>
+
+      <section className="border-t border-white/20 pt-6">
+        <h3 className="mb-4 text-xl font-semibold">Answers ({question.answers.length})</h3>
+
+        {question.answers.map((answer) => (
+          <article key={answer.id} className="mb-6 rounded-lg bg-white/5 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              {answer.author.isAdmin && (
+                <Shield className="h-4 w-4 text-yellow-400" aria-label="Expert" />
+              )}
+              <span className="font-semibold">{answer.author.name}</span>
+              <time dateTime={answer.createdAt} className="text-sm text-white/60">
+                {formatDate(answer.createdAt)}
+              </time>
+            </div>
+            <p className="whitespace-pre-line text-white/90">{answer.content}</p>
+          </article>
+        ))}
+
+        {canAnswer && <AnswerForm onSubmit={onSubmitAnswer} />}
+      </section>
+    </Modal>
+  );
+}
+
+function AnswerForm({ onSubmit }: { onSubmit: (content: string) => Promise<void> }) {
+  const [content, setContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!content.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await onSubmit(content.trim());
+      setContent('');
+    } catch (submitError) {
+      setError(getErrorMessage(submitError));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  export default QuestionDetailModal;
+  return (
+    <form
+      onSubmit={(event) => {
+        void handleSubmit(event);
+      }}
+      className="mt-6 rounded-lg bg-white/5 p-4"
+    >
+      <h4 className="mb-3 flex items-center gap-2 font-semibold">
+        <Shield className="h-4 w-4 text-yellow-400" aria-hidden="true" />
+        Add Expert Answer
+      </h4>
+      {error && (
+        <div className="mb-4">
+          <ErrorMessage message={error} />
+        </div>
+      )}
+      <textarea
+        value={content}
+        onChange={(event) => {
+          setContent(event.target.value);
+        }}
+        placeholder="Type your answer..."
+        aria-label="Your answer"
+        className="mb-4 min-h-[100px] w-full rounded-lg border border-white/20 bg-white/10 p-3 text-white placeholder-white/60"
+      />
+      <button
+        type="submit"
+        disabled={!content.trim() || isSubmitting}
+        className="w-full rounded-lg bg-white/20 py-3 font-semibold transition hover:bg-white/30 disabled:opacity-50"
+      >
+        {isSubmitting ? 'Posting…' : 'Post Answer'}
+      </button>
+    </form>
+  );
+}
