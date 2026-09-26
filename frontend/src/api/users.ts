@@ -3,20 +3,25 @@ import type { User as AuthUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import type { ExpertProfile, User, UserStatus } from '../types/models';
 
-/** Columns that are safe to expose publicly when embedding a user in another record. */
+/**
+ * Columns that are safe to expose publicly when embedding a user in another record. Clients
+ * can only read public profile columns (enforced with column privileges in the database), so
+ * queries must list columns explicitly rather than using `*`.
+ */
 export const USER_SUMMARY_COLUMNS = 'id, name, isAdmin, avatar, title' as const;
 
 const EXPERT_COLUMNS = `${USER_SUMMARY_COLUMNS}, bio, expertise, rating, responseTime` as const;
 
-export async function fetchUserById(userId: string): Promise<User | null> {
-  const { data, error } = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
+/** The signed-in user's full profile, including private fields such as email. */
+async function fetchMyProfile(): Promise<User | null> {
+  const { data, error } = await supabase.rpc('get_my_profile').maybeSingle();
   if (error) throw error;
   return data;
 }
 
-/** All users, including private fields. Intended for the admin dashboard (enforced by RLS). */
+/** All users with their private fields, for the admin dashboard (experts only). */
 export async function fetchAllUsers(): Promise<User[]> {
-  const { data, error } = await supabase.from('users').select('*').order('createdAt');
+  const { data, error } = await supabase.rpc('admin_list_users');
   if (error) throw error;
   return data;
 }
@@ -62,7 +67,7 @@ export async function fetchExperts(): Promise<ExpertProfile[]> {
  * duplicates, so concurrent calls for the same user are safe.
  */
 export async function ensureUserProfile(authUser: AuthUser): Promise<User> {
-  const existing = await fetchUserById(authUser.id);
+  const existing = await fetchMyProfile();
   if (existing) return existing;
 
   const email = authUser.email ?? '';
@@ -74,7 +79,7 @@ export async function ensureUserProfile(authUser: AuthUser): Promise<User> {
     );
   if (error) throw error;
 
-  const created = await fetchUserById(authUser.id);
+  const created = await fetchMyProfile();
   if (!created) throw new Error('Your account exists, but your profile could not be loaded.');
   return created;
 }

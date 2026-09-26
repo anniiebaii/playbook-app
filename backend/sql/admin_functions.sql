@@ -7,6 +7,22 @@
 
 begin;
 
+-- Every account with its private fields (such as email), for the admin dashboard's user list.
+create or replace function public.admin_list_users()
+returns setof public.users
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Only experts can list accounts.' using errcode = '42501';
+  end if;
+  return query select * from public.users order by "createdAt";
+end;
+$$;
+
 -- Deactivating bans the login in Supabase Auth (enforced at sign-in and token refresh)
 -- and ends every active session. Reactivating lifts the ban.
 create or replace function public.admin_set_user_status(
@@ -88,8 +104,10 @@ $$;
 -- Callable by signed-in users only; the functions themselves require an expert.
 revoke execute on function public.admin_set_user_status(uuid, public.user_status) from public, anon;
 revoke execute on function public.admin_delete_user(uuid) from public, anon;
+revoke execute on function public.admin_list_users() from public, anon;
 grant execute on function public.admin_set_user_status(uuid, public.user_status) to authenticated;
 grant execute on function public.admin_delete_user(uuid) to authenticated;
+grant execute on function public.admin_list_users() to authenticated;
 
 -- Make the new functions available through the API immediately.
 notify pgrst, 'reload schema';

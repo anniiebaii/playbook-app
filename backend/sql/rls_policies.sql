@@ -45,6 +45,27 @@ create policy "Users can create their own profile"
     and status = 'ACTIVE'
   );
 
+-- Column privileges. RLS filters rows, not columns, so "viewable by everyone" would otherwise
+-- expose every column. Clients may read only public profile fields; email and account details
+-- come from get_my_profile() (the caller's own row) and admin_list_users() (experts only).
+revoke select on public.users from anon, authenticated;
+grant select (id, name, "isAdmin", title, expertise, bio, rating, "responseTime", avatar)
+  on public.users to anon, authenticated;
+
+-- The signed-in user's full profile, including private fields such as email.
+create or replace function public.get_my_profile()
+returns setof public.users
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select * from public.users where id = (select auth.uid());
+$$;
+
+revoke execute on function public.get_my_profile() from public, anon;
+grant execute on function public.get_my_profile() to authenticated;
+
 -- questions: public; members ask as themselves; experts update status and delete.
 drop policy if exists "Questions are viewable by everyone" on public.questions;
 create policy "Questions are viewable by everyone"
@@ -115,5 +136,8 @@ drop policy if exists "Users can read their notifications" on public.notificatio
 create policy "Users can read their notifications"
   on public.notifications for select to authenticated
   using ("userId" = (select auth.uid()));
+
+-- Make new functions available through the API immediately.
+notify pgrst, 'reload schema';
 
 commit;

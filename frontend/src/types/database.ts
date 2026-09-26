@@ -142,6 +142,8 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       is_admin: { Args: { [_ in never]: never }; Returns: boolean };
+      get_my_profile: { Args: { [_ in never]: never }; Returns: UserRow[] };
+      admin_list_users: { Args: { [_ in never]: never }; Returns: UserRow[] };
       admin_set_user_status: {
         Args: { target_user_id: string; new_status: Enums['user_status'] };
         Returns: undefined;

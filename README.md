@@ -6,6 +6,8 @@
 from verified expert advisors. Answered questions build up into a searchable library of
 practical leadership advice.
 
+_Playbook is a fun little side project I built for a friend._
+
 Built with **React 19**, **TypeScript**, **Vite**, **Tailwind CSS**, and **Supabase**
 (Postgres, Auth, and an auto-generated REST API), with the schema defined in **Prisma**.
 

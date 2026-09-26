@@ -312,9 +312,11 @@ failures.
   The `!fk_name` hint picks the join, which is needed because `questions` references `users`
   twice.
 
-- **Least exposure.** Embedded users select an explicit allowlist of public columns
-  (`USER_SUMMARY_COLUMNS`), and the expert directory selects only public profile fields.
-  Email addresses and other private fields are fetched only for the admin dashboard.
+- **Least exposure.** Clients can only read public profile columns from `users`; the
+  database enforces this with column privileges (see [section 8](#8-security-model)), so
+  queries list columns explicitly, as in `USER_SUMMARY_COLUMNS`. A user's own email and
+  account details come from `get_my_profile()`, and the admin user list from
+  `admin_list_users()`.
 
 ## 8. Security model
 
@@ -323,15 +325,22 @@ bundle that every visitor downloads, so the client is never a security boundary.
 authorization must be enforced by Postgres RLS policies**, keyed on `auth.uid()`. The
 policies are versioned in `backend/sql/rls_policies.sql` and applied with
 `npm run db:policies`, since Prisma doesn't manage policies. A `SECURITY DEFINER` helper,
-`is_admin()`, lets policies check whether the current user is an expert. The policies:
+`is_admin()`, lets policies check whether the current user is an expert.
 
-| Table                                    | Read               | Write                                                                                                                                      |
-| ---------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `users`                                  | Everyone           | Insert own profile only, with `isAdmin = false` and `points = 0`. Status changes and deletion only through the expert-only functions below |
-| `questions`                              | Everyone           | Insert: authenticated, `authorId = auth.uid()`, status `PENDING`. Update and delete: experts                                               |
-| `answers`                                | Everyone           | Insert: experts only, `authorId = auth.uid()`                                                                                              |
-| `question_upvotes`, `question_bookmarks` | Everyone           | Insert or delete own rows only (`userId = auth.uid()`)                                                                                     |
-| `notifications`                          | The recipient only | None from clients; to be written server-side by triggers                                                                                   |
+RLS decides which _rows_ are visible, not which _columns_, so making profiles public would
+otherwise expose every column, including email. Column privileges close that gap: clients may
+read only public profile fields (name, title, bio, expertise, rating, response time, and
+avatar). Private fields are available only through two `SECURITY DEFINER` functions:
+`get_my_profile()` returns the caller's own row, and `admin_list_users()` returns every row
+to experts. The policies:
+
+| Table                                    | Read                        | Write                                                                                                                                      |
+| ---------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `users`                                  | Public profile columns only | Insert own profile only, with `isAdmin = false` and `points = 0`. Status changes and deletion only through the expert-only functions below |
+| `questions`                              | Everyone                    | Insert: authenticated, `authorId = auth.uid()`, status `PENDING`. Update and delete: experts                                               |
+| `answers`                                | Everyone                    | Insert: experts only, `authorId = auth.uid()`                                                                                              |
+| `question_upvotes`, `question_bookmarks` | Everyone                    | Insert or delete own rows only (`userId = auth.uid()`)                                                                                     |
+| `notifications`                          | The recipient only          | None from clients; to be written server-side by triggers                                                                                   |
 
 **Account management runs in the database.** Deactivating or deleting an account must touch
 Supabase Auth's own tables, which the browser can never access. The admin dashboard therefore
@@ -380,16 +389,15 @@ for convenience only; RLS is what actually enforces access.
 
 ## 11. Limitations and future work
 
-| Area                 | Current state                                                                                                          | Next step                                                                                                              |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Routing              | Screens and modals are React state, so there are no shareable URLs and the back button doesn't navigate                | Add React Router: `/questions/:id`, `/experts/:id`, and a guarded `/admin`                                             |
-| Scale                | The whole feed loads at once, and search and filtering run in the browser                                              | Paginate with `range()`, and move search to Postgres full-text search                                                  |
-| Atomic operations    | Posting an answer and marking the question `ANSWERED` are two client requests. Profile creation runs on the client     | Move these into Postgres triggers or RPC functions: set status on answer insert, create profile on `auth.users` insert |
-| Notifications        | Read-only in the UI; nothing generates them yet                                                                        | Triggers that insert notifications on new answers and upvotes, delivered live via Supabase Realtime                    |
-| Counters             | `views` is never incremented, and `points` and `rating` aren't computed                                                | A view-count RPC, and scoring rules in the database                                                                    |
-| Answer types         | The schema supports `VIDEO` and `AUDIO`, but only `TEXT` is implemented                                                | Media upload to Supabase Storage                                                                                       |
-| Topics               | Tags are a hard-coded list in `constants.ts`                                                                           | A `tags` table managed from the admin dashboard                                                                        |
-| Types and migrations | `types/database.ts` is maintained by hand, and the schema is applied with `prisma db push`                             | Generate types with `supabase gen types typescript` in CI, and adopt `prisma migrate` for versioned migrations         |
-| Server state         | A custom `useAsyncData` hook with persist-then-update mutations                                                        | TanStack Query for caching, refetch on focus, and optimistic updates                                                   |
-| Profile privacy      | `users` rows are publicly readable, so the API can return email addresses. The app itself requests only public columns | Column-level grants that exclude `email`, plus a `SECURITY DEFINER` RPC for the admin user list                        |
-| Testing              | Unit and component tests                                                                                               | End-to-end tests with Playwright against a local Supabase instance                                                     |
+| Area                 | Current state                                                                                                      | Next step                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Routing              | Screens and modals are React state, so there are no shareable URLs and the back button doesn't navigate            | Add React Router: `/questions/:id`, `/experts/:id`, and a guarded `/admin`                                             |
+| Scale                | The whole feed loads at once, and search and filtering run in the browser                                          | Paginate with `range()`, and move search to Postgres full-text search                                                  |
+| Atomic operations    | Posting an answer and marking the question `ANSWERED` are two client requests. Profile creation runs on the client | Move these into Postgres triggers or RPC functions: set status on answer insert, create profile on `auth.users` insert |
+| Notifications        | Read-only in the UI; nothing generates them yet                                                                    | Triggers that insert notifications on new answers and upvotes, delivered live via Supabase Realtime                    |
+| Counters             | `views` is never incremented, and `points` and `rating` aren't computed                                            | A view-count RPC, and scoring rules in the database                                                                    |
+| Answer types         | The schema supports `VIDEO` and `AUDIO`, but only `TEXT` is implemented                                            | Media upload to Supabase Storage                                                                                       |
+| Topics               | Tags are a hard-coded list in `constants.ts`                                                                       | A `tags` table managed from the admin dashboard                                                                        |
+| Types and migrations | `types/database.ts` is maintained by hand, and the schema is applied with `prisma db push`                         | Generate types with `supabase gen types typescript` in CI, and adopt `prisma migrate` for versioned migrations         |
+| Server state         | A custom `useAsyncData` hook with persist-then-update mutations                                                    | TanStack Query for caching, refetch on focus, and optimistic updates                                                   |
+| Testing              | Unit and component tests                                                                                           | End-to-end tests with Playwright against a local Supabase instance                                                     |
