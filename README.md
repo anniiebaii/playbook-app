@@ -11,6 +11,8 @@ _Playbook is a fun little side project I built for a friend._
 Built with **React 19**, **TypeScript**, **Vite**, **Tailwind CSS**, and **Supabase**
 (Postgres, Auth, and an auto-generated REST API), with the schema defined in **Prisma**.
 
+Side project intended for personal usage. 
+
 > For the architecture, data model, and design trade-offs, see the
 > [**High-Level Design document**](docs/DESIGN.md).
 
