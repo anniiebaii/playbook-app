@@ -1,18 +1,20 @@
 {
+  "name": "playbook-database",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prisma schema for the Playbook Postgres database hosted on Supabase.",
+  "scripts": {
+    "db:push": "prisma db push",
+    "db:policies": "prisma db execute --file sql/rls_policies.sql --schema prisma/schema.prisma",
+    "db:functions": "prisma db execute --file sql/admin_functions.sql --schema prisma/schema.prisma",
+    "db:seed": "prisma db execute --file sql/seed_sample_data.sql --schema prisma/schema.prisma",
+    "db:seed:remove": "prisma db execute --file sql/remove_sample_data.sql --schema prisma/schema.prisma",
+    "db:studio": "prisma studio",
+    "format": "prisma format",
+    "validate": "prisma validate"
+  },
   "dependencies": {
     "@prisma/client": "^6.14.0",
     "prisma": "^6.14.0"
-  },
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  }
 }

@@ -1,51 +1,57 @@
-import React, { useState } from 'react';
-import { Notification } from '../../lib/supabase';
-import { Utils } from '../../lib/utils';
-import { User as LucideUser, X } from 'lucide-react';
+import { CircleQuestionMark, MessageSquare, ThumbsUp, type LucideIcon } from 'lucide-react';
+import { useId } from 'react';
 
+import type { Notification, NotificationType } from '../../types/models';
+import { formatRelativeTime } from '../../utils/format';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { Modal, ModalCloseButton } from '../ui/Modal';
 
-interface NotificationsProp {
-    showNotifications: boolean;
-    setShowNotifications: (show: boolean) => void;
-    notifications: Notification[]
+const NOTIFICATION_STYLES: Record<NotificationType, { icon: LucideIcon; color: string }> = {
+  ANSWER: { icon: MessageSquare, color: 'text-blue-400' },
+  QUESTION: { icon: CircleQuestionMark, color: 'text-purple-400' },
+  UPVOTE: { icon: ThumbsUp, color: 'text-green-400' },
+};
+
+interface NotificationsModalProps {
+  notifications: readonly Notification[];
+  isLoading: boolean;
+  onClose: () => void;
 }
-const NotificationsModal: React.FC<NotificationsProp> = ({
-    showNotifications,
-    setShowNotifications,
-    notifications
-}) => {
 
-    if (!showNotifications) return null;
+export function NotificationsModal({ notifications, isLoading, onClose }: NotificationsModalProps) {
+  const headingId = useId();
 
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl max-w-md w-full border border-white/20">
-          <div className="p-6 border-b border-white/20 flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Notifications</h2>
-            <button onClick={() => setShowNotifications(false)} className="p-2 hover:bg-white/10 rounded-lg">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
-            {notifications.map(notification => {
-              const Icon = notification.icon;
-              return (
-                <div key={notification.id} className="flex gap-3">
-                  <div className={`p-2 bg-white/10 rounded-lg ${notification.color}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">{notification.title}</h3>
-                    <p className="text-sm text-white/80">{notification.message}</p>
-                    <span className="text-xs text-white/60">{Utils.formatTimestamp(notification.timestamp)}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+  return (
+    <Modal labelledBy={headingId} onClose={onClose} className="max-w-md">
+      <div className="flex items-center justify-between border-b border-white/20 p-6">
+        <h2 id={headingId} className="text-2xl font-bold">
+          Notifications
+        </h2>
+        <ModalCloseButton onClick={onClose} />
       </div>
-    );
+      <div className="max-h-96 space-y-4 overflow-y-auto p-6">
+        {isLoading && <LoadingSpinner label="Loading notifications..." />}
+        {!isLoading && notifications.length === 0 && (
+          <p className="text-center text-white/60">You&apos;re all caught up.</p>
+        )}
+        {notifications.map((notification) => {
+          const { icon: Icon, color } = NOTIFICATION_STYLES[notification.type];
+          return (
+            <div key={notification.id} className="flex gap-3">
+              <div className={`h-fit rounded-lg bg-white/10 p-2 ${color}`}>
+                <Icon className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <h3 className="font-semibold">{notification.title}</h3>
+                <p className="text-sm text-white/80">{notification.message}</p>
+                <time dateTime={notification.createdAt} className="text-xs text-white/60">
+                  {formatRelativeTime(notification.createdAt)}
+                </time>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Modal>
+  );
 }
-
-export default NotificationsModal;

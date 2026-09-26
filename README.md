@@ -1,83 +1,115 @@
-# Getting Started
+# Playbook
 
-## Install Homebrew (for macOS)
-Follow instruction to install on [Homebrew](https://brew.sh).
+[![CI](https://github.com/anniiebaii/playbook-app/actions/workflows/ci.yml/badge.svg)](https://github.com/anniiebaii/playbook-app/actions/workflows/ci.yml)
 
-## Install Node
-On your terminal, run 
-```
-brew install node
-```
+**Playbook** is a knowledge base where sales and business leaders ask questions and get answers
+from verified expert advisors. Answered questions build up into a searchable library of
+practical leadership advice.
 
-## Clone Project Repository from Github
-Clone the project from Github using the provided command. This should prompt you for your Github username and password. 
-```
-git clone https://github.com/anniiebaii/leaderlink-app.git
-```
-Alternatively, to avoid typing in your username and password each time you run a `git` command, you can configure your SSH keys by following Github's [instructions](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
+Built with **React 19**, **TypeScript**, **Vite**, **Tailwind CSS**, and **Supabase**
+(Postgres, Auth, and an auto-generated REST API), with the schema defined in **Prisma**.
 
+> For the architecture, data model, and design trade-offs, see the
+> [**High-Level Design document**](docs/DESIGN.md).
 
-## Setup Dependencies 
-1. Navigate into the project's frontend directory.
-```
-cd leaderlink-app/frontend
-```
-2. Install required node dependencies.
-```
+## Features
+
+- **Question feed** with trending, recent, and unanswered views, topic filters, and search
+- **Expert directory** with profiles, plus the option to direct a question to a specific
+  expert
+- **Expert answers**, with questions marked answered automatically
+- **Upvotes and bookmarks**, limited to one per user per question by database constraints
+- **Email and password accounts** through Supabase Auth, with sessions that persist across
+  reloads
+- **Admin dashboard** for experts: statistics, a pending-question queue, recent activity,
+  question moderation (delete questions), and member management (deactivate or
+  permanently delete accounts)
+- **Accessible UI**: labelled forms, keyboard-closable dialogs, and ARIA state on toggle
+  buttons
+
+## Tech stack
+
+| Area     | Tools                                                                                  |
+| -------- | -------------------------------------------------------------------------------------- |
+| Frontend | React 19, TypeScript (strict), Vite, Tailwind CSS, lucide-react                        |
+| Backend  | Supabase: Postgres with Row Level Security, PostgREST, Auth                            |
+| Schema   | Prisma                                                                                 |
+| Quality  | ESLint (type-aware strict rules), Prettier, Vitest, Testing Library, GitHub Actions CI |
+
+## Getting started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org) 20.19+ or 22.12+ (the repo's `.nvmrc` pins 24)
+- A [Supabase](https://supabase.com) project (the free tier is enough)
+
+### 1. Set up the database
+
+Apply the Prisma schema to your Supabase Postgres database:
+
+```bash
+cd backend
+cp .env.example .env   # then set DATABASE_URL from Supabase: Project Settings -> Database
 npm install
+npm run db:push       # create tables from the Prisma schema
+npm run db:policies   # enable Row Level Security and apply access policies
+npm run db:functions  # expert-only account management (deactivate, delete)
+npm run db:seed       # optional: sample questions, answers, and experts for demos
 ```
 
-## Run project
+The policies and functions live in `backend/sql/`; see
+[Security model](docs/DESIGN.md#8-security-model). To make a user an expert advisor, set
+`isAdmin = true` on their row in the `users` table.
 
-Run the project by running
+The sample data uses fictional `@demo.example.com` people who can't sign in. Re-running
+`npm run db:seed` refreshes it, and `npm run db:seed:remove` deletes it along with everything
+attached to it.
+
+### 2. Run the frontend
+
+```bash
+cd frontend
+cp .env.example .env   # then set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+npm install
+npm run dev
 ```
-npm start
+
+Open <http://localhost:5173>.
+
+> The Supabase anon key is safe to use in the browser: data access is enforced by Row Level
+> Security. Keep your `.env` files out of version control anyway; they are git-ignored.
+
+## Scripts
+
+Run these from `frontend/`:
+
+| Command              | Description                                      |
+| -------------------- | ------------------------------------------------ |
+| `npm run dev`        | Start the dev server with hot reloading          |
+| `npm run build`      | Type-check and build for production into `dist/` |
+| `npm run preview`    | Serve the production build locally               |
+| `npm test`           | Run the test suite once                          |
+| `npm run test:watch` | Run tests in watch mode                          |
+| `npm run lint`       | Lint with ESLint                                 |
+| `npm run typecheck`  | Type-check with the TypeScript compiler          |
+| `npm run format`     | Format the code with Prettier                    |
+
+## Project structure
+
+```text
+playbook-app/
+├── backend/                 Database schema (Prisma) for Supabase Postgres
+│   └── prisma/schema.prisma
+├── docs/
+│   └── DESIGN.md            High-level design document
+├── frontend/                React single-page app
+│   └── src/
+│       ├── api/             Data access, one module per resource
+│       ├── components/      Presentational UI components
+│       ├── context/         Auth provider
+│       ├── hooks/           Data and state hooks
+│       ├── pages/           Full-screen views
+│       ├── types/           Domain models and database schema types
+│       └── utils/           Pure helper functions
+└── .github/workflows/ci.yml Lint, test, and build on every push
 ```
-
-Your default browser should automatically open up. If not, you can manually open the App via "http://localhost:3000/" in your browser.
-
-# React App 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-
-## Available Scripts
-
-In the project directory, you can run:
-
-### `npm start`
-
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
