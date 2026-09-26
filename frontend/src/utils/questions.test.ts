@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { makeQuestion, makeReaction, makeUserSummary } from '../test/fixtures';
 import {
   countAnswers,
+  describeDeletion,
   filterQuestions,
   hasReacted,
   isHotQuestion,
@@ -106,5 +107,14 @@ describe('filterQuestions with missing tags', () => {
     const untagged = makeQuestion({ id: 9, tags: null });
     expect(filterQuestions([untagged], { searchQuery: '', tag: 'Sales' })).toEqual([]);
     expect(ids(filterQuestions([untagged], { searchQuery: '', tag: '' }))).toEqual([9]);
+  });
+});
+
+describe('describeDeletion', () => {
+  it('lists what else is removed with the question', () => {
+    const question = makeQuestion({ upvotes: [makeReaction()], bookmarks: [] });
+    expect(describeDeletion(question)).toBe(
+      "This permanently deletes the question along with its 0 answers, 1 upvote, 0 bookmarks. This can't be undone.",
+    );
   });
 });

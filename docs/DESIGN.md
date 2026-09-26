@@ -37,10 +37,12 @@ Main features:
 - **Expert directory**: expert profiles with bio, areas of expertise, rating, and typical
   response time. Members can direct a question to a specific expert.
 - **Answers**: experts post text answers. A question is marked `ANSWERED` once it has one.
+  Experts can also delete questions, from the admin dashboard or the question view; its
+  answers, upvotes, and bookmarks go with it.
 - **Engagement**: upvotes and bookmarks, one of each per user per question.
 - **Admin dashboard**: counts at a glance, pending questions, recent activity, and member
-  management. Experts can deactivate an account, which blocks sign-in and keeps its content,
-  or delete it permanently along with everything the user created.
+  management. Experts can delete questions, deactivate an account (which blocks sign-in and keeps
+  its content), or delete an account permanently along with everything the user created.
 
 ## 2. System architecture
 
@@ -326,7 +328,7 @@ policies are versioned in `backend/sql/rls_policies.sql` and applied with
 | Table                                    | Read               | Write                                                                                                                                      |
 | ---------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `users`                                  | Everyone           | Insert own profile only, with `isAdmin = false` and `points = 0`. Status changes and deletion only through the expert-only functions below |
-| `questions`                              | Everyone           | Insert: authenticated, `authorId = auth.uid()`, status `PENDING`. Update: experts                                                          |
+| `questions`                              | Everyone           | Insert: authenticated, `authorId = auth.uid()`, status `PENDING`. Update and delete: experts                                               |
 | `answers`                                | Everyone           | Insert: experts only, `authorId = auth.uid()`                                                                                              |
 | `question_upvotes`, `question_bookmarks` | Everyone           | Insert or delete own rows only (`userId = auth.uid()`)                                                                                     |
 | `notifications`                          | The recipient only | None from clients; to be written server-side by triggers                                                                                   |

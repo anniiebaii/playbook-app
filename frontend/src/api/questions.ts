@@ -45,6 +45,23 @@ export async function createQuestion(input: NewQuestionInput): Promise<QuestionW
   return data;
 }
 
+/**
+ * Deletes a question and, through cascading foreign keys, its answers, upvotes, and bookmarks.
+ * Only experts may delete (enforced by RLS).
+ */
+export async function deleteQuestion(questionId: number): Promise<void> {
+  const { data, error } = await supabase
+    .from('questions')
+    .delete()
+    .eq('id', questionId)
+    .select('id');
+  if (error) throw error;
+  // RLS filters out rows the caller may not delete instead of raising an error.
+  if (data.length === 0) {
+    throw new Error("This question couldn't be deleted. It may already be gone.");
+  }
+}
+
 export async function updateQuestionStatus(
   questionId: number,
   status: QuestionStatus,

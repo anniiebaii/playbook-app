@@ -1,5 +1,9 @@
+import { useState } from 'react';
+
 import type { QuestionStatus, QuestionWithRelations } from '../../types/models';
 import { formatRelativeTime } from '../../utils/format';
+import { describeDeletion } from '../../utils/questions';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { StatusBadge } from './StatusBadge';
 
 export type StatusFilter = QuestionStatus | 'ALL';
@@ -9,6 +13,7 @@ interface QuestionManagementProps {
   statusFilter: StatusFilter;
   onStatusFilterChange: (filter: StatusFilter) => void;
   onOpenQuestion: (questionId: number) => void;
+  onDeleteQuestion: (questionId: number) => Promise<void>;
 }
 
 const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
@@ -22,7 +27,9 @@ export function QuestionManagement({
   statusFilter,
   onStatusFilterChange,
   onOpenQuestion,
+  onDeleteQuestion,
 }: QuestionManagementProps) {
+  const [questionToDelete, setQuestionToDelete] = useState<QuestionWithRelations | null>(null);
   const filtered =
     statusFilter === 'ALL' ? questions : questions.filter((q) => q.status === statusFilter);
 
@@ -72,10 +79,37 @@ export function QuestionManagement({
               >
                 {question.status === 'ANSWERED' ? 'View' : 'Answer'}
               </button>
+              <button
+                type="button"
+                aria-label={`Delete question: ${question.text}`}
+                onClick={() => {
+                  setQuestionToDelete(question);
+                }}
+                className="rounded bg-red-500/20 px-3 py-1 text-sm text-red-200 transition hover:bg-red-500/30"
+              >
+                Delete
+              </button>
             </div>
           </li>
         ))}
       </ul>
+
+      {questionToDelete && (
+        <ConfirmDialog
+          title="Delete this question?"
+          confirmLabel="Delete question"
+          onCancel={() => {
+            setQuestionToDelete(null);
+          }}
+          onConfirm={async () => {
+            await onDeleteQuestion(questionToDelete.id);
+            setQuestionToDelete(null);
+          }}
+        >
+          <p className="mb-2 font-medium text-white">&ldquo;{questionToDelete.text}&rdquo;</p>
+          <p>{describeDeletion(questionToDelete)}</p>
+        </ConfirmDialog>
+      )}
     </section>
   );
 }

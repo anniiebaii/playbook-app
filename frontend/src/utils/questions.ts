@@ -1,5 +1,6 @@
 import { HOT_QUESTION_UPVOTE_THRESHOLD } from '../constants';
 import type { QuestionReaction, QuestionWithRelations } from '../types/models';
+import { pluralize } from './format';
 
 export type ViewMode = 'trending' | 'recent' | 'unanswered';
 
@@ -61,4 +62,14 @@ export function isHotQuestion(question: QuestionWithRelations): boolean {
 
 export function countAnswers(questions: readonly QuestionWithRelations[]): number {
   return questions.reduce((total, question) => total + question.answers.length, 0);
+}
+
+/** Summarizes what deleting a question also removes, for the confirmation prompt. */
+export function describeDeletion(question: QuestionWithRelations): string {
+  const extras = [
+    pluralize(question.answers.length, 'answer'),
+    pluralize(question.upvotes.length, 'upvote'),
+    pluralize(question.bookmarks.length, 'bookmark'),
+  ];
+  return `This permanently deletes the question along with its ${extras.join(', ')}. This can't be undone.`;
 }

@@ -22,7 +22,8 @@ Built with **React 19**, **TypeScript**, **Vite**, **Tailwind CSS**, and **Supab
 - **Email and password accounts** through Supabase Auth, with sessions that persist across
   reloads
 - **Admin dashboard** for experts: statistics, a pending-question queue, recent activity,
-  and member management (deactivate or permanently delete accounts)
+  question moderation (delete questions), and member management (deactivate or
+  permanently delete accounts)
 - **Accessible UI**: labelled forms, keyboard-closable dialogs, and ARIA state on toggle
   buttons
 

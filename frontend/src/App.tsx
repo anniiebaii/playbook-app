@@ -40,6 +40,7 @@ export function App() {
     isLoading,
     error,
     createQuestion,
+    deleteQuestion,
     addAnswer,
     toggleUpvote,
     toggleBookmark,
@@ -129,7 +130,12 @@ export function App() {
           <QuestionDetailModal
             question={question}
             canAnswer={currentUser?.isAdmin ?? false}
+            canDelete={currentUser?.isAdmin ?? false}
             onClose={closeModal}
+            onDelete={async () => {
+              await deleteQuestion(question.id);
+              closeModal();
+            }}
             onSubmitAnswer={async (content) => {
               if (!currentUser) throw new Error('Please sign in to answer.');
               await addAnswer({
@@ -211,6 +217,7 @@ export function App() {
       <AdminPage
         questions={questions}
         onOpenQuestion={openQuestion}
+        onDeleteQuestion={deleteQuestion}
         onExit={() => {
           setScreen('home');
         }}

@@ -1,9 +1,10 @@
-import { Shield } from 'lucide-react';
+import { Shield, Trash } from 'lucide-react';
 import { useId, useState, type SubmitEvent } from 'react';
 
 import type { QuestionWithRelations } from '../../types/models';
 import { getErrorMessage } from '../../utils/errors';
 import { formatDate } from '../../utils/format';
+import { describeDeletion } from '../../utils/questions';
 import { TagList } from '../questions/TagList';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { Modal, ModalCloseButton } from '../ui/Modal';
@@ -12,15 +13,20 @@ interface QuestionDetailModalProps {
   question: QuestionWithRelations;
   /** Whether the current user may post answers (experts only). */
   canAnswer: boolean;
+  /** Whether the current user may delete the question (experts only). */
+  canDelete: boolean;
   onClose: () => void;
   onSubmitAnswer: (content: string) => Promise<void>;
+  onDelete: () => Promise<void>;
 }
 
 export function QuestionDetailModal({
   question,
   canAnswer,
+  canDelete,
   onClose,
   onSubmitAnswer,
+  onDelete,
 }: QuestionDetailModalProps) {
   const headingId = useId();
 
@@ -71,6 +77,8 @@ export function QuestionDetailModal({
 
         {canAnswer && <AnswerForm onSubmit={onSubmitAnswer} />}
       </section>
+
+      {canDelete && <DeleteQuestionControl question={question} onDelete={onDelete} />}
     </Modal>
   );
 }
@@ -129,5 +137,87 @@ function AnswerForm({ onSubmit }: { onSubmit: (content: string) => Promise<void>
         {isSubmitting ? 'Posting…' : 'Post Answer'}
       </button>
     </form>
+  );
+}
+
+/**
+ * Inline confirmation rather than a second dialog: stacked dialogs would both close on a
+ * single Escape press.
+ */
+function DeleteQuestionControl({
+  question,
+  onDelete,
+}: {
+  question: QuestionWithRelations;
+  onDelete: () => Promise<void>;
+}) {
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const confirmDelete = async () => {
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await onDelete();
+    } catch (deleteError) {
+      setError(getErrorMessage(deleteError));
+      setIsDeleting(false);
+    }
+  };
+
+  if (!isConfirming) {
+    return (
+      <div className="mt-6 flex justify-end border-t border-white/20 pt-6">
+        <button
+          type="button"
+          onClick={() => {
+            setIsConfirming(true);
+          }}
+          className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-red-300 transition hover:bg-red-500/20"
+        >
+          <Trash className="h-4 w-4" aria-hidden="true" />
+          Delete question
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label="Confirm deletion"
+      className="mt-6 rounded-lg border border-red-500/40 bg-red-500/10 p-4"
+    >
+      <p className="mb-4 text-sm text-red-100">{describeDeletion(question)}</p>
+      {error && (
+        <div className="mb-4">
+          <ErrorMessage message={error} />
+        </div>
+      )}
+      <div className="flex gap-3">
+        <button
+          type="button"
+          disabled={isDeleting}
+          onClick={() => {
+            void confirmDelete();
+          }}
+          className="rounded-lg bg-red-500/30 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/40 disabled:opacity-50"
+        >
+          {isDeleting ? 'Deleting…' : 'Delete permanently'}
+        </button>
+        <button
+          type="button"
+          disabled={isDeleting}
+          onClick={() => {
+            setIsConfirming(false);
+            setError(null);
+          }}
+          className="rounded-lg bg-white/10 px-4 py-2 text-sm transition hover:bg-white/20 disabled:opacity-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }

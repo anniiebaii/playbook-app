@@ -19,6 +19,7 @@ const TABS: { id: AdminTab; label: string }[] = [
 interface AdminPageProps {
   questions: readonly QuestionWithRelations[];
   onOpenQuestion: (questionId: number) => void;
+  onDeleteQuestion: (questionId: number) => Promise<void>;
   onExit: () => void;
   onSignOut: () => void;
   /** Called after a user and their content are deleted, so shared data can refresh. */
@@ -28,6 +29,7 @@ interface AdminPageProps {
 export function AdminPage({
   questions,
   onOpenQuestion,
+  onDeleteQuestion,
   onExit,
   onSignOut,
   onUserDeleted,
@@ -127,6 +129,7 @@ export function AdminPage({
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
             onOpenQuestion={onOpenQuestion}
+            onDeleteQuestion={onDeleteQuestion}
           />
         )}
         {tab === 'users' && (

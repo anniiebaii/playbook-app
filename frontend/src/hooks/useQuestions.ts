@@ -3,6 +3,7 @@ import { useCallback, useRef } from 'react';
 import { createAnswer } from '../api/answers';
 import {
   createQuestion as insertQuestion,
+  deleteQuestion as removeQuestion,
   fetchQuestions,
   updateQuestionStatus,
 } from '../api/questions';
@@ -43,6 +44,14 @@ export function useQuestions() {
       const question = await insertQuestion(input);
       mutate((questions) => [question, ...questions]);
       return question;
+    },
+    [mutate],
+  );
+
+  const deleteQuestion = useCallback(
+    async (questionId: number) => {
+      await removeQuestion(questionId);
+      mutate((questions) => questions.filter((q) => q.id !== questionId));
     },
     [mutate],
   );
@@ -101,6 +110,7 @@ export function useQuestions() {
     isLoading,
     error,
     createQuestion,
+    deleteQuestion,
     addAnswer,
     toggleUpvote,
     toggleBookmark,

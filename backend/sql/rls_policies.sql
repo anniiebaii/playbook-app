@@ -45,7 +45,7 @@ create policy "Users can create their own profile"
     and status = 'ACTIVE'
   );
 
--- questions: public; members ask as themselves; experts update status.
+-- questions: public; members ask as themselves; experts update status and delete.
 drop policy if exists "Questions are viewable by everyone" on public.questions;
 create policy "Questions are viewable by everyone"
   on public.questions for select
@@ -61,6 +61,12 @@ create policy "Experts can update questions"
   on public.questions for update to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
+
+-- Deleting a question cascades to its answers, upvotes, and bookmarks.
+drop policy if exists "Experts can delete questions" on public.questions;
+create policy "Experts can delete questions"
+  on public.questions for delete to authenticated
+  using ((select public.is_admin()));
 
 -- answers: public; only experts may answer, as themselves.
 drop policy if exists "Answers are viewable by everyone" on public.answers;
