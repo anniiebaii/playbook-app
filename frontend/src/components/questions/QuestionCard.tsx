@@ -49,21 +49,27 @@ export function QuestionCard({
             <p className="mb-3 line-clamp-2 text-white/60">{question.description}</p>
           )}
 
-          <div className="flex flex-wrap items-center gap-4 text-white/70">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-white/70">
             <span className="flex items-center gap-1">
               <UserIcon className="h-4 w-4" aria-hidden="true" />
               {question.author.name}, {question.role}
             </span>
-            <span aria-hidden="true">•</span>
+            <span aria-hidden="true" className="hidden sm:inline">
+              •
+            </span>
             <time dateTime={question.createdAt}>{formatRelativeTime(question.createdAt)}</time>
-            <span aria-hidden="true">•</span>
+            <span aria-hidden="true" className="hidden sm:inline">
+              •
+            </span>
             <span className="flex items-center gap-1">
               <Eye className="h-4 w-4" aria-hidden="true" />
               {pluralize(question.views, 'view')}
             </span>
             {question.status === 'ANSWERED' && (
               <>
-                <span aria-hidden="true">•</span>
+                <span aria-hidden="true" className="hidden sm:inline">
+                  •
+                </span>
                 <span className="flex items-center gap-1 text-green-400">
                   <CircleCheckBig className="h-4 w-4" aria-hidden="true" />
                   Answered
