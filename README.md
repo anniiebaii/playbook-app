@@ -53,11 +53,16 @@ npm install
 npm run db:push       # create tables from the Prisma schema
 npm run db:policies   # enable Row Level Security and apply access policies
 npm run db:functions  # expert-only account management (deactivate, delete)
+npm run db:seed       # optional: sample questions, answers, and experts for demos
 ```
 
 The policies and functions live in `backend/sql/`; see
 [Security model](docs/DESIGN.md#8-security-model). To make a user an expert advisor, set
 `isAdmin = true` on their row in the `users` table.
+
+The sample data uses fictional `@demo.example.com` people who can't sign in. Re-running
+`npm run db:seed` refreshes it, and `npm run db:seed:remove` deletes it along with everything
+attached to it.
 
 ### 2. Run the frontend
 
