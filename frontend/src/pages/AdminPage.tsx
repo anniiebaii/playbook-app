@@ -1,12 +1,12 @@
 import { LogOut, Shield } from 'lucide-react';
 import { useState } from 'react';
 
-import { fetchAllUsers } from '../api/users';
+import { deleteUser, fetchAllUsers, setUserStatus } from '../api/users';
 import { AdminDashboard } from '../components/admin/AdminDashboard';
 import { QuestionManagement, type StatusFilter } from '../components/admin/QuestionManagement';
 import { UserManagement } from '../components/admin/UserManagement';
 import { useAsyncData } from '../hooks/useAsyncData';
-import type { QuestionWithRelations } from '../types/models';
+import type { QuestionWithRelations, User, UserStatus } from '../types/models';
 
 type AdminTab = 'dashboard' | 'questions' | 'users';
 
@@ -21,13 +21,37 @@ interface AdminPageProps {
   onOpenQuestion: (questionId: number) => void;
   onExit: () => void;
   onSignOut: () => void;
+  /** Called after a user and their content are deleted, so shared data can refresh. */
+  onUserDeleted: () => void;
 }
 
-export function AdminPage({ questions, onOpenQuestion, onExit, onSignOut }: AdminPageProps) {
+export function AdminPage({
+  questions,
+  onOpenQuestion,
+  onExit,
+  onSignOut,
+  onUserDeleted,
+}: AdminPageProps) {
   const [tab, setTab] = useState<AdminTab>('dashboard');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
-  const { data: users, isLoading: isLoadingUsers, error: usersError } = useAsyncData(fetchAllUsers);
+  const {
+    data: users,
+    isLoading: isLoadingUsers,
+    error: usersError,
+    mutate: mutateUsers,
+  } = useAsyncData(fetchAllUsers);
   const members = (users ?? []).filter((user) => !user.isAdmin);
+
+  const changeStatus = async (member: User, status: UserStatus) => {
+    await setUserStatus(member.id, status);
+    mutateUsers((list) => list.map((user) => (user.id === member.id ? { ...user, status } : user)));
+  };
+
+  const removeUser = async (member: User) => {
+    await deleteUser(member.id);
+    mutateUsers((list) => list.filter((user) => user.id !== member.id));
+    onUserDeleted();
+  };
 
   const showQuestions = (filter: StatusFilter) => {
     setStatusFilter(filter);
@@ -106,7 +130,13 @@ export function AdminPage({ questions, onOpenQuestion, onExit, onSignOut }: Admi
           />
         )}
         {tab === 'users' && (
-          <UserManagement members={members} isLoading={isLoadingUsers} error={usersError} />
+          <UserManagement
+            members={members}
+            isLoading={isLoadingUsers}
+            error={usersError}
+            onSetStatus={changeStatus}
+            onDelete={removeUser}
+          />
         )}
       </main>
     </div>

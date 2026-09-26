@@ -1,4 +1,4 @@
-import type { QuestionReaction, QuestionWithRelations, UserSummary } from '../types/models';
+import type { QuestionReaction, QuestionWithRelations, User, UserSummary } from '../types/models';
 
 export function makeUserSummary(overrides: Partial<UserSummary> = {}): UserSummary {
   return {
@@ -42,6 +42,26 @@ export function makeQuestion(
     answers: [],
     upvotes: [],
     bookmarks: [],
+    ...overrides,
+  };
+}
+
+export function makeUser(overrides: Partial<User> = {}): User {
+  return {
+    id: 'user-1',
+    email: 'jordan@example.com',
+    name: 'Jordan Lee',
+    isAdmin: false,
+    status: 'ACTIVE',
+    title: null,
+    expertise: null,
+    bio: null,
+    rating: null,
+    responseTime: null,
+    avatar: null,
+    points: 0,
+    createdAt: '2025-01-01T00:00:00+00:00',
+    updatedAt: '2025-01-01T00:00:00+00:00',
     ...overrides,
   };
 }

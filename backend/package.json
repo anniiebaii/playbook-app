@@ -6,6 +6,7 @@
   "scripts": {
     "db:push": "prisma db push",
     "db:policies": "prisma db execute --file sql/rls_policies.sql --schema prisma/schema.prisma",
+    "db:functions": "prisma db execute --file sql/admin_functions.sql --schema prisma/schema.prisma",
     "db:studio": "prisma studio",
     "format": "prisma format",
     "validate": "prisma validate"

@@ -2,6 +2,7 @@ import type { User as AuthUser } from '@supabase/supabase-js';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import {
+  ACCOUNT_DEACTIVATED_MESSAGE,
   onAuthUserChange,
   signInWithPassword,
   signOut as endSession,
@@ -52,7 +53,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let isStale = false;
     loadProfile(authUser).then(
       (profile) => {
-        if (!isStale) setProfileResult({ userId: authUser.id, profile });
+        if (isStale) return;
+        if (profile.status === 'INACTIVE') {
+          // A restored session for a deactivated account: sign it out instead.
+          setProfileResult({ userId: authUser.id, profile: null });
+          endSession().catch((error: unknown) => {
+            console.error('Failed to sign out deactivated account:', error);
+          });
+          return;
+        }
+        setProfileResult({ userId: authUser.id, profile });
       },
       (error: unknown) => {
         console.error('Failed to load user profile:', error);
@@ -68,6 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       const user = await signInWithPassword(email, password);
       const profile = await loadProfile(user);
+      if (profile.status === 'INACTIVE') {
+        // Supabase Auth rejects banned accounts before this point; this also covers a status
+        // that was changed directly in the table without a ban.
+        await endSession();
+        throw new Error(ACCOUNT_DEACTIVATED_MESSAGE);
+      }
       setProfileResult({ userId: user.id, profile });
       return profile;
     },

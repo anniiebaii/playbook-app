@@ -38,8 +38,9 @@ Main features:
   response time. Members can direct a question to a specific expert.
 - **Answers**: experts post text answers. A question is marked `ANSWERED` once it has one.
 - **Engagement**: upvotes and bookmarks, one of each per user per question.
-- **Admin dashboard**: counts at a glance, pending questions, recent activity, and the member
-  list.
+- **Admin dashboard**: counts at a glance, pending questions, recent activity, and member
+  management. Experts can deactivate an account, which blocks sign-in and keeps its content,
+  or delete it permanently along with everything the user created.
 
 ## 2. System architecture
 
@@ -280,7 +281,9 @@ Notes:
   so the database itself prevents double upvotes. Both tables share one TypeScript type and
   one API module (`api/reactions.ts`).
 - **Cascading deletes.** Deleting a question removes its answers, upvotes, and bookmarks.
-  Deleting a user removes their reactions and notifications.
+  Deleting a user removes everything they created: their questions (and those questions'
+  answers and reactions), answers, upvotes, bookmarks, and notifications. Questions
+  assigned to them become unassigned (`SET NULL`), since those belong to the asker.
 - **Timestamps** are `timestamptz`, stored in UTC and returned as ISO 8601 strings.
 - **Nullable arrays.** Prisma declares list columns as required, but Postgres creates them as
   nullable arrays, and rows inserted through Supabase can contain `NULL`. The TypeScript
@@ -320,13 +323,30 @@ policies are versioned in `backend/sql/rls_policies.sql` and applied with
 `npm run db:policies`, since Prisma doesn't manage policies. A `SECURITY DEFINER` helper,
 `is_admin()`, lets policies check whether the current user is an expert. The policies:
 
-| Table                                    | Read               | Write                                                                               |
-| ---------------------------------------- | ------------------ | ----------------------------------------------------------------------------------- |
-| `users`                                  | Everyone           | Insert own profile only, with `isAdmin = false` and `points = 0`. No client updates |
-| `questions`                              | Everyone           | Insert: authenticated, `authorId = auth.uid()`, status `PENDING`. Update: experts   |
-| `answers`                                | Everyone           | Insert: experts only, `authorId = auth.uid()`                                       |
-| `question_upvotes`, `question_bookmarks` | Everyone           | Insert or delete own rows only (`userId = auth.uid()`)                              |
-| `notifications`                          | The recipient only | None from clients; to be written server-side by triggers                            |
+| Table                                    | Read               | Write                                                                                                                                      |
+| ---------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `users`                                  | Everyone           | Insert own profile only, with `isAdmin = false` and `points = 0`. Status changes and deletion only through the expert-only functions below |
+| `questions`                              | Everyone           | Insert: authenticated, `authorId = auth.uid()`, status `PENDING`. Update: experts                                                          |
+| `answers`                                | Everyone           | Insert: experts only, `authorId = auth.uid()`                                                                                              |
+| `question_upvotes`, `question_bookmarks` | Everyone           | Insert or delete own rows only (`userId = auth.uid()`)                                                                                     |
+| `notifications`                          | The recipient only | None from clients; to be written server-side by triggers                                                                                   |
+
+**Account management runs in the database.** Deactivating or deleting an account must touch
+Supabase Auth's own tables, which the browser can never access. The admin dashboard therefore
+calls two `SECURITY DEFINER` functions through `supabase.rpc()`, defined in
+`backend/sql/admin_functions.sql`. Each checks `is_admin()` and refuses to act on the caller's
+own account:
+
+- **`admin_set_user_status`** updates `users.status`. On deactivation it also sets
+  `auth.users.banned_until`, which Supabase Auth enforces at sign-in (error code
+  `user_banned`, shown as "Your account has been deactivated.") and at token refresh, and it
+  deletes the user's sessions. An access token already issued stays valid until it expires,
+  one hour by default. Reactivation lifts the ban. As a second line of defense, the app signs
+  out any session whose profile is inactive.
+- **`admin_delete_user`** deletes the profile, letting the foreign-key cascades remove the
+  user's content. It moves questions that lost their only answer back to `PENDING`, then
+  deletes the `auth.users` row, so the user can't sign back in and silently get a new
+  profile.
 
 Other measures: secrets are kept out of git (`.env` is ignored and `.env.example` documents
 the variables), and the UI hides actions a user isn't allowed to take. The UI checks are

@@ -28,7 +28,7 @@ const REACTION_FIELDS = {
  * update local state, so the UI never shows data the server rejected.
  */
 export function useQuestions() {
-  const { data, error, isLoading, mutate } = useAsyncData(fetchQuestions);
+  const { data, error, isLoading, mutate, reload } = useAsyncData(fetchQuestions);
   const pendingReactions = useRef(new Set<string>());
 
   const updateQuestion = useCallback(
@@ -104,5 +104,7 @@ export function useQuestions() {
     addAnswer,
     toggleUpvote,
     toggleBookmark,
+    /** Refetches the feed, e.g. after an admin deletes a user and their content. */
+    reload,
   };
 }

@@ -1,7 +1,7 @@
 import type { User as AuthUser } from '@supabase/supabase-js';
 
 import { supabase } from '../lib/supabaseClient';
-import type { ExpertProfile, User } from '../types/models';
+import type { ExpertProfile, User, UserStatus } from '../types/models';
 
 /** Columns that are safe to expose publicly when embedding a user in another record. */
 export const USER_SUMMARY_COLUMNS = 'id, name, isAdmin, avatar, title' as const;
@@ -19,6 +19,27 @@ export async function fetchAllUsers(): Promise<User[]> {
   const { data, error } = await supabase.from('users').select('*').order('createdAt');
   if (error) throw error;
   return data;
+}
+
+/**
+ * Activates or deactivates an account (experts only, enforced in the database). Deactivating
+ * also bans the login in Supabase Auth and signs the user out everywhere.
+ */
+export async function setUserStatus(userId: string, status: UserStatus): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_user_status', {
+    target_user_id: userId,
+    new_status: status,
+  });
+  if (error) throw error;
+}
+
+/**
+ * Permanently deletes an account and, via cascading foreign keys, everything the user
+ * created (experts only, enforced in the database).
+ */
+export async function deleteUser(userId: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_delete_user', { target_user_id: userId });
+  if (error) throw error;
 }
 
 /** Expert advisors (admin users), with public profile fields only. */

@@ -67,4 +67,26 @@ describe('useAsyncData', () => {
     });
     expect(result.current.data).toEqual([1, 2, 3]);
   });
+
+  it('reloads in the background without dropping current data', async () => {
+    let calls = 0;
+    const next = deferred<number>();
+    const load = () => (++calls === 1 ? Promise.resolve(1) : next.promise);
+    const { result } = renderHook(() => useAsyncData(load));
+    await waitFor(() => {
+      expect(result.current.data).toBe(1);
+    });
+
+    act(() => {
+      result.current.reload();
+    });
+    expect(result.current).toMatchObject({ data: 1, isLoading: false });
+
+    await act(async () => {
+      next.resolve(2);
+      await next.promise;
+    });
+    expect(result.current.data).toBe(2);
+    expect(calls).toBe(2);
+  });
 });

@@ -8,6 +8,8 @@ export interface AsyncData<T> {
   isLoading: boolean;
   /** Applies a local update to loaded data, e.g. after a successful mutation. */
   mutate: (update: (current: T) => T) => void;
+  /** Refetches in the background, keeping the current data until the new result arrives. */
+  reload: () => void;
 }
 
 interface Settled<T> {
@@ -25,6 +27,7 @@ interface Settled<T> {
  */
 export function useAsyncData<T>(load: (() => Promise<T>) | null): AsyncData<T> {
   const [settled, setSettled] = useState<Settled<T> | null>(null);
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
     if (!load) return;
@@ -40,12 +43,16 @@ export function useAsyncData<T>(load: (() => Promise<T>) | null): AsyncData<T> {
     return () => {
       isStale = true;
     };
-  }, [load]);
+  }, [load, reloadCount]);
 
   const mutate = useCallback((update: (current: T) => T) => {
     setSettled((previous) =>
       previous?.data === undefined ? previous : { ...previous, data: update(previous.data) },
     );
+  }, []);
+
+  const reload = useCallback(() => {
+    setReloadCount((count) => count + 1);
   }, []);
 
   const current = settled?.source === load ? settled : undefined;
@@ -54,5 +61,6 @@ export function useAsyncData<T>(load: (() => Promise<T>) | null): AsyncData<T> {
     error: current?.error,
     isLoading: load !== null && current === undefined,
     mutate,
+    reload,
   };
 }

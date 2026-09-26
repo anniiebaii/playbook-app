@@ -140,7 +140,14 @@ export type Database = {
       >;
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      is_admin: { Args: { [_ in never]: never }; Returns: boolean };
+      admin_set_user_status: {
+        Args: { target_user_id: string; new_status: Enums['user_status'] };
+        Returns: undefined;
+      };
+      admin_delete_user: { Args: { target_user_id: string }; Returns: undefined };
+    };
     Enums: {
       user_status: 'ACTIVE' | 'INACTIVE';
       question_status: 'PENDING' | 'ANSWERED';

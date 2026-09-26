@@ -22,7 +22,7 @@ Built with **React 19**, **TypeScript**, **Vite**, **Tailwind CSS**, and **Supab
 - **Email and password accounts** through Supabase Auth, with sessions that persist across
   reloads
 - **Admin dashboard** for experts: statistics, a pending-question queue, recent activity,
-  and the member list
+  and member management (deactivate or permanently delete accounts)
 - **Accessible UI**: labelled forms, keyboard-closable dialogs, and ARIA state on toggle
   buttons
 
@@ -52,9 +52,10 @@ cp .env.example .env   # then set DATABASE_URL from Supabase: Project Settings -
 npm install
 npm run db:push       # create tables from the Prisma schema
 npm run db:policies   # enable Row Level Security and apply access policies
+npm run db:functions  # expert-only account management (deactivate, delete)
 ```
 
-The policies live in `backend/sql/rls_policies.sql`; see
+The policies and functions live in `backend/sql/`; see
 [Security model](docs/DESIGN.md#8-security-model). To make a user an expert advisor, set
 `isAdmin = true` on their row in the `users` table.
 

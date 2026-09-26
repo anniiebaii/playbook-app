@@ -14,15 +14,27 @@ export interface SignUpResponse {
   hasSession: boolean;
 }
 
+export const ACCOUNT_DEACTIVATED_MESSAGE = 'Your account has been deactivated.';
+
 const FRIENDLY_AUTH_ERRORS: Partial<Record<string, string>> = {
   invalid_credentials: 'Invalid email or password.',
   email_not_confirmed: 'Please confirm your email address, then sign in.',
   user_already_exists: 'An account with this email already exists.',
   weak_password: 'Please choose a stronger password.',
+  // Deactivated accounts are banned in Supabase Auth.
+  user_banned: ACCOUNT_DEACTIVATED_MESSAGE,
 };
 
+/** Maps a Supabase Auth error to a message that can be shown on the sign-in form. */
+export function getAuthErrorMessage({
+  code,
+  message,
+}: Pick<AuthError, 'code' | 'message'>): string {
+  return (code && FRIENDLY_AUTH_ERRORS[code]) ?? message;
+}
+
 function toFriendlyError(error: AuthError): Error {
-  return new Error((error.code && FRIENDLY_AUTH_ERRORS[error.code]) ?? error.message);
+  return new Error(getAuthErrorMessage(error));
 }
 
 export async function signInWithPassword(email: string, password: string): Promise<AuthUser> {

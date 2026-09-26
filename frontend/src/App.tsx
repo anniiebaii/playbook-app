@@ -35,8 +35,16 @@ const GENERIC_ERROR = 'Something went wrong. Please try again.';
 /** Top-level coordinator: owns app-wide data, the current screen, and the open modal. */
 export function App() {
   const { currentUser, signOut } = useAuth();
-  const { questions, isLoading, error, createQuestion, addAnswer, toggleUpvote, toggleBookmark } =
-    useQuestions();
+  const {
+    questions,
+    isLoading,
+    error,
+    createQuestion,
+    addAnswer,
+    toggleUpvote,
+    toggleBookmark,
+    reload: reloadQuestions,
+  } = useQuestions();
   const { experts, isLoading: isLoadingExperts } = useExperts();
   const notifications = useNotifications(currentUser?.id);
 
@@ -207,6 +215,7 @@ export function App() {
           setScreen('home');
         }}
         onSignOut={handleSignOut}
+        onUserDeleted={reloadQuestions}
       />
     );
   } else {
