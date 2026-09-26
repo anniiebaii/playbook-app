@@ -50,10 +50,11 @@ Apply the Prisma schema to your Supabase Postgres database:
 cd backend
 cp .env.example .env   # then set DATABASE_URL from Supabase: Project Settings -> Database
 npm install
-npm run db:push
+npm run db:push       # create tables from the Prisma schema
+npm run db:policies   # enable Row Level Security and apply access policies
 ```
 
-Then enable Row Level Security on each table and add policies, as described in
+The policies live in `backend/sql/rls_policies.sql`; see
 [Security model](docs/DESIGN.md#8-security-model). To make a user an expert advisor, set
 `isAdmin = true` on their row in the `users` table.
 

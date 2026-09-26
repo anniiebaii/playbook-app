@@ -316,15 +316,17 @@ failures.
 The Supabase URL and anon key are **public by design**. They are embedded in the JavaScript
 bundle that every visitor downloads, so the client is never a security boundary. **All
 authorization must be enforced by Postgres RLS policies**, keyed on `auth.uid()`. The
-policies the app expects:
+policies are versioned in `backend/sql/rls_policies.sql` and applied with
+`npm run db:policies`, since Prisma doesn't manage policies. A `SECURITY DEFINER` helper,
+`is_admin()`, lets policies check whether the current user is an expert. The policies:
 
-| Table                                    | Read                                                 | Write                                                                                                   |
-| ---------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `questions`                              | Everyone                                             | Insert: authenticated, `authorId = auth.uid()`. Status update: experts                                  |
-| `answers`                                | Everyone                                             | Insert: experts only, `authorId = auth.uid()`                                                           |
-| `question_upvotes`, `question_bookmarks` | Everyone                                             | Insert or delete own rows only (`userId = auth.uid()`)                                                  |
-| `users`                                  | Public columns for everyone; all columns for experts | Insert own row with `isAdmin = false`. Users must never be able to set `isAdmin` or `points` themselves |
-| `notifications`                          | Own rows only                                        | Written server-side (triggers), not by clients                                                          |
+| Table                                    | Read               | Write                                                                               |
+| ---------------------------------------- | ------------------ | ----------------------------------------------------------------------------------- |
+| `users`                                  | Everyone           | Insert own profile only, with `isAdmin = false` and `points = 0`. No client updates |
+| `questions`                              | Everyone           | Insert: authenticated, `authorId = auth.uid()`, status `PENDING`. Update: experts   |
+| `answers`                                | Everyone           | Insert: experts only, `authorId = auth.uid()`                                       |
+| `question_upvotes`, `question_bookmarks` | Everyone           | Insert or delete own rows only (`userId = auth.uid()`)                              |
+| `notifications`                          | The recipient only | None from clients; to be written server-side by triggers                            |
 
 Other measures: secrets are kept out of git (`.env` is ignored and `.env.example` documents
 the variables), and the UI hides actions a user isn't allowed to take. The UI checks are
@@ -356,15 +358,16 @@ for convenience only; RLS is what actually enforces access.
 
 ## 11. Limitations and future work
 
-| Area                 | Current state                                                                                                      | Next step                                                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Routing              | Screens and modals are React state, so there are no shareable URLs and the back button doesn't navigate            | Add React Router: `/questions/:id`, `/experts/:id`, and a guarded `/admin`                                             |
-| Scale                | The whole feed loads at once, and search and filtering run in the browser                                          | Paginate with `range()`, and move search to Postgres full-text search                                                  |
-| Atomic operations    | Posting an answer and marking the question `ANSWERED` are two client requests. Profile creation runs on the client | Move these into Postgres triggers or RPC functions: set status on answer insert, create profile on `auth.users` insert |
-| Notifications        | Read-only in the UI; nothing generates them yet                                                                    | Triggers that insert notifications on new answers and upvotes, delivered live via Supabase Realtime                    |
-| Counters             | `views` is never incremented, and `points` and `rating` aren't computed                                            | A view-count RPC, and scoring rules in the database                                                                    |
-| Answer types         | The schema supports `VIDEO` and `AUDIO`, but only `TEXT` is implemented                                            | Media upload to Supabase Storage                                                                                       |
-| Topics               | Tags are a hard-coded list in `constants.ts`                                                                       | A `tags` table managed from the admin dashboard                                                                        |
-| Types and migrations | `types/database.ts` is maintained by hand, and the schema is applied with `prisma db push`                         | Generate types with `supabase gen types typescript` in CI, and adopt `prisma migrate` for versioned migrations         |
-| Server state         | A custom `useAsyncData` hook with persist-then-update mutations                                                    | TanStack Query for caching, refetch on focus, and optimistic updates                                                   |
-| Testing              | Unit and component tests                                                                                           | End-to-end tests with Playwright against a local Supabase instance                                                     |
+| Area                 | Current state                                                                                                          | Next step                                                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Routing              | Screens and modals are React state, so there are no shareable URLs and the back button doesn't navigate                | Add React Router: `/questions/:id`, `/experts/:id`, and a guarded `/admin`                                             |
+| Scale                | The whole feed loads at once, and search and filtering run in the browser                                              | Paginate with `range()`, and move search to Postgres full-text search                                                  |
+| Atomic operations    | Posting an answer and marking the question `ANSWERED` are two client requests. Profile creation runs on the client     | Move these into Postgres triggers or RPC functions: set status on answer insert, create profile on `auth.users` insert |
+| Notifications        | Read-only in the UI; nothing generates them yet                                                                        | Triggers that insert notifications on new answers and upvotes, delivered live via Supabase Realtime                    |
+| Counters             | `views` is never incremented, and `points` and `rating` aren't computed                                                | A view-count RPC, and scoring rules in the database                                                                    |
+| Answer types         | The schema supports `VIDEO` and `AUDIO`, but only `TEXT` is implemented                                                | Media upload to Supabase Storage                                                                                       |
+| Topics               | Tags are a hard-coded list in `constants.ts`                                                                           | A `tags` table managed from the admin dashboard                                                                        |
+| Types and migrations | `types/database.ts` is maintained by hand, and the schema is applied with `prisma db push`                             | Generate types with `supabase gen types typescript` in CI, and adopt `prisma migrate` for versioned migrations         |
+| Server state         | A custom `useAsyncData` hook with persist-then-update mutations                                                        | TanStack Query for caching, refetch on focus, and optimistic updates                                                   |
+| Profile privacy      | `users` rows are publicly readable, so the API can return email addresses. The app itself requests only public columns | Column-level grants that exclude `email`, plus a `SECURITY DEFINER` RPC for the admin user list                        |
+| Testing              | Unit and component tests                                                                                               | End-to-end tests with Playwright against a local Supabase instance                                                     |
