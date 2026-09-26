@@ -66,7 +66,7 @@ export function AuthPage({ onAuthenticated, onContinueAsGuest }: AuthPageProps) 
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-900 via-indigo-800 to-purple-700 p-4 text-white">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-5xl font-bold">Lynk</h1>
+          <h1 className="mb-2 text-5xl font-bold">Playbook</h1>
           <p className="text-white/70">The Business Leadership Knowledge Base</p>
         </div>
 

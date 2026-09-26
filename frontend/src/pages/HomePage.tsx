@@ -77,7 +77,7 @@ export function HomePage({
       <div className="mx-auto max-w-7xl px-4 py-8">
         {!currentUser && (
           <WelcomeBanner
-            title="Welcome to Lynk"
+            title="Welcome to Playbook"
             subtitle="Build the ultimate knowledge base for sales and business leaders. Get expert insights from verified professionals."
             highlights={WELCOME_HIGHLIGHTS}
           />

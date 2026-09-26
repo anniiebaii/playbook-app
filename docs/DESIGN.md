@@ -1,6 +1,6 @@
-# Lynk: High-Level Design
+# Playbook: High-Level Design
 
-Lynk is a question-and-answer knowledge base for sales and business leaders. Members ask
+Playbook is a question-and-answer knowledge base for sales and business leaders. Members ask
 questions about topics such as recruiting, objection handling, and team management, and
 verified expert advisors answer them. Over time the answered questions become a searchable
 library.
@@ -44,7 +44,7 @@ Main features:
 
 ## 2. System architecture
 
-Lynk is a single-page React app backed entirely by [Supabase](https://supabase.com). There
+Playbook is a single-page React app backed entirely by [Supabase](https://supabase.com). There
 is no custom application server: the browser talks directly to Supabase's managed services.
 Postgres Row Level Security (RLS) enforces who can read and write what.
 

@@ -1,8 +1,8 @@
-# Lynk
+# Playbook
 
-[![CI](https://github.com/anniiebaii/leaderlink-app/actions/workflows/ci.yml/badge.svg)](https://github.com/anniiebaii/leaderlink-app/actions/workflows/ci.yml)
+[![CI](https://github.com/anniiebaii/playbook-app/actions/workflows/ci.yml/badge.svg)](https://github.com/anniiebaii/playbook-app/actions/workflows/ci.yml)
 
-**Lynk** is a knowledge base where sales and business leaders ask questions and get answers
+**Playbook** is a knowledge base where sales and business leaders ask questions and get answers
 from verified expert advisors. Answered questions build up into a searchable library of
 practical leadership advice.
 
@@ -91,7 +91,7 @@ Run these from `frontend/`:
 ## Project structure
 
 ```text
-leaderlink-app/
+playbook-app/
 ├── backend/                 Database schema (Prisma) for Supabase Postgres
 │   └── prisma/schema.prisma
 ├── docs/

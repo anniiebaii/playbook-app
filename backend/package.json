@@ -1,8 +1,8 @@
 {
-  "name": "lynk-database",
+  "name": "playbook-database",
   "version": "1.0.0",
   "private": true,
-  "description": "Prisma schema for the Lynk Postgres database hosted on Supabase.",
+  "description": "Prisma schema for the Playbook Postgres database hosted on Supabase.",
   "scripts": {
     "db:push": "prisma db push",
     "db:policies": "prisma db execute --file sql/rls_policies.sql --schema prisma/schema.prisma",

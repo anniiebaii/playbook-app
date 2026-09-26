@@ -21,7 +21,7 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header className="mb-12 flex items-center justify-between">
-      <h1 className="text-4xl font-bold">Lynk</h1>
+      <h1 className="text-4xl font-bold">Playbook</h1>
       <nav className="flex items-center gap-4">
         {currentUser ? (
           <>

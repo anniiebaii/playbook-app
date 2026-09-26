@@ -1,4 +1,4 @@
--- Row Level Security policies for Lynk.
+-- Row Level Security policies for Playbook.
 --
 -- The browser talks to Postgres through Supabase's public API with the anon key, so these
 -- policies are the only thing controlling who can read and write each table. Prisma does

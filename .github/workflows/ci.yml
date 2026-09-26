@@ -51,4 +51,4 @@ jobs:
       - run: npx prisma validate
         env:
           # Validation only parses the URL; no database connection is made.
-          DATABASE_URL: postgresql://user:password@localhost:5432/lynk
+          DATABASE_URL: postgresql://user:password@localhost:5432/playbook
